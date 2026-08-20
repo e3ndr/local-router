@@ -56,8 +56,25 @@ public class RouteProviderProxy implements EndpointProvider {
             } catch (IOException ignored) {}
         }
 
+        Runnable cleanup = () -> {
+            if ($flight[0] != null) {
+                $flight[0].markCompleted();
+            }
+
+            if (requiresLock) {
+                LR.unlockLocalModels(provider.resourcePool());
+            }
+        };
+
         if (requiresLock) {
             LR.lockLocalModels(provider.resourcePool(), providerId);
+            try {
+                provider.wakeUp();
+            } catch (Throwable t) {
+                cleanup.run();
+                t.printStackTrace();
+                return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst waking up: " + provider.id() + "\n\n" + t.getMessage());
+            }
         }
 
         if ($flight[0] != null) {
@@ -80,10 +97,7 @@ public class RouteProviderProxy implements EndpointProvider {
                 return r;
             });
         } catch (Throwable t) {
-            if ($flight[0] != null) {
-                $flight[0].markCompleted();
-            }
-
+            cleanup.run();
             t.printStackTrace();
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst proxying request:\n\n" + t.getMessage());
         }
@@ -92,15 +106,8 @@ public class RouteProviderProxy implements EndpointProvider {
             new ResponseContent() {
                 @Override
                 public void close() throws IOException {
-                    if ($flight[0] != null) {
-                        $flight[0].markCompleted();
-                    }
-
                     result.body().close();
-
-                    if (requiresLock) {
-                        LR.unlockLocalModels(provider.resourcePool());
-                    }
+                    cleanup.run();
                 }
 
                 @Override

@@ -122,8 +122,15 @@ public class RouteV1 implements EndpointProvider {
         body.put("model", imp.modelId()); // Correct the model ID to be just the model name, without the provider prefix.
 
         InFlightRequest flight = InFlight.register(imp.provider().id(), imp.modelId());
-
         boolean requiresLock = !imp.provider().isCloud();
+
+        Runnable cleanup = () -> {
+            flight.markCompleted();
+
+            if (requiresLock) {
+                LR.unlockLocalModels(imp.provider().resourcePool());
+            }
+        };
 
         if (requiresLock) {
             LR.lockLocalModels(imp.provider().resourcePool(), imp.provider().id());
@@ -140,7 +147,7 @@ public class RouteV1 implements EndpointProvider {
                 case EMBEDDINGS -> imp.provider().v1Embeddings(body);
             };
         } catch (IOException | InterruptedException e) {
-            flight.markCompleted();
+            cleanup.run();
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst fetching completions from: " + imp.provider().id() + "\n\n" + e.getMessage());
         }
 
@@ -148,13 +155,8 @@ public class RouteV1 implements EndpointProvider {
             new ResponseContent() {
                 @Override
                 public void close() throws IOException {
-                    flight.markCompleted();
-
-                    if (requiresLock) {
-                        LR.unlockLocalModels(imp.provider().resourcePool());
-                    }
-
                     result.body().close();
+                    cleanup.run();
                 }
 
                 @Override

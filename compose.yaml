@@ -1,0 +1,11 @@
+services:
+  local-router:
+    image: ghcr.io/e3ndr/local-router:latest # or rolling-main for bleeding edge
+    restart: unless-stopped
+    volumes:
+      - lr-data:/data
+    environment:
+      JAVA_OPTS: "" # Anything you want to pass to the JVM.
+    ports:
+      - 8080:8080 # BYO reverse proxy for SSL :)
+      - 8081:8081 # Keep this private! It is unsecured.

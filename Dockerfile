@@ -9,7 +9,7 @@ COPY ./target/local-router.jar /home/container/local-router.jar
 
 # Healthcheck
 HEALTHCHECK --interval=5s --timeout=5s --retries=6 --start-period=5s \
-    CMD curl -f "http://localhost:$API_PORT/_healthcheck" || exit 1
+    CMD curl -f "http://localhost:$API_PORT" || exit 1
 
 # Entrypoint
 CMD ["sh", "-c", "java $JAVA_OPTS -jar /home/container/local-router.jar"]

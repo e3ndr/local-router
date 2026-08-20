@@ -1,0 +1,103 @@
+html {
+	font-optical-sizing: auto;
+}
+
+html,
+body {
+	overscroll-behavior: none;
+	height: 100%;
+}
+
+* {
+	-webkit-touch-callout: none; /* iOS Safari */
+	-webkit-user-drag: none;
+}
+
+pre {
+	white-space: pre-wrap;
+}
+
+/* ---------------- */
+/* safe             */
+/* ---------------- */
+
+:root {
+	--sat: env(safe-area-inset-top);
+	--sab: env(safe-area-inset-bottom);
+	--sal: env(safe-area-inset-left);
+	--sar: env(safe-area-inset-right);
+}
+
+.safe-all {
+	padding: var(--sat) var(--sar) var(--sab) var(--sal);
+}
+
+.safe-top {
+	padding-top: var(--sat);
+}
+
+.safe-right {
+	padding-right: var(--sar);
+}
+
+.safe-bottom {
+	padding-bottom: var(--sab);
+}
+
+.safe-left {
+	padding-left: var(--sal);
+}
+
+/* ---------------- */
+/* break-anywhere   */
+/* ---------------- */
+
+@supports not (overflow-wrap: anywhere) {
+	.break-anywhere {
+		word-break: break-word;
+	}
+}
+
+@supports (overflow-wrap: anywhere) {
+	.break-anywhere {
+		overflow-wrap: anywhere;
+	}
+}
+
+@supports not (overflow-wrap: anywhere) {
+	.break-anywhere {
+		word-break: break-word;
+	}
+}
+
+@supports (overflow-wrap: anywhere) {
+	.break-anywhere {
+		overflow-wrap: anywhere;
+	}
+}
+
+/* ---------------- */
+/* scroll bar       */
+/* ---------------- */
+
+@supports not selector(::-webkit-scrollbar) {
+	* {
+		scrollbar-color: var(--radix-intermediate-sage-11) transparent;
+		scrollbar-width: thin;
+	}
+}
+
+*::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+	background: transparent;
+	border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+	background: var(--radix-intermediate-sage-11);
+	border-radius: 10px;
+}

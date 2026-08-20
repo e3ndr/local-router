@@ -5,7 +5,7 @@ ENV API_PORT=8080
 ENV UI_PORT=8081
 
 # Copy Files
-COPY ./target/local-router.jar /home/container
+COPY ./target/local-router.jar /home/container/local-router.jar
 
 # Healthcheck
 HEALTHCHECK --interval=5s --timeout=5s --retries=6 --start-period=5s \

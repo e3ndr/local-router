@@ -5,6 +5,7 @@
 	import ApiKeyCreateCard from '$lib/layout/ApiKeyCreateCard.svelte';
 	import InferenceProviderCard from '$lib/layout/InferenceProviderCard.svelte';
 	import InferenceProviderCreateCard from '$lib/layout/InferenceProviderCreateCard.svelte';
+	import InferenceProviderLogo from '$lib/layout/InferenceProviderLogo.svelte';
 	import LoadingSpinner from '$lib/layout/LoadingSpinner.svelte';
 	import ModelAliasCard from '$lib/layout/ModelAliasCard.svelte';
 	import ModelAliasCreateCard from '$lib/layout/ModelAliasCreateCard.svelte';
@@ -20,6 +21,7 @@
 	let providers: InferenceProvider[] = $state([]);
 
 	let providerHealth: Record<string, boolean> = $state({});
+	let providersById: Record<string, InferenceProvider> = $state({});
 	let inFlight: InFlightInference[] = $state([]);
 
 	function updateProviderHealth() {
@@ -55,6 +57,7 @@
 
 		API.listProviders().then((fetchedProviders) => {
 			providers = fetchedProviders;
+			providersById = Object.fromEntries(fetchedProviders.map((p) => [p.id, p]));
 		});
 
 		updateProviderHealth();
@@ -197,6 +200,7 @@
 							</span>
 						</button>
 
+						<InferenceProviderLogo type={providersById[flight.providerId].type} />
 						<span>{flight.providerId}</span>
 						<span class="text-sand-11">&bull;</span>
 						<span class="text-sand-11">{flight.modelId}</span>
@@ -204,7 +208,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="text-sm text-sand-11">No requests in flight.</p>
+			<p class="text-sm text-sand-11">No requests in-flight.</p>
 		{/if}
 	</div>
 </main>

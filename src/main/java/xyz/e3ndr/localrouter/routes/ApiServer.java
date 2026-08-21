@@ -16,7 +16,7 @@ public class ApiServer {
     public static void start() throws UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
         ApiFramework framework = new ApiFramework();
         framework.register(new RouteHome());
-        framework.register(new RouteV1());
+        framework.register(new RouteInference());
         framework.register(new RouteProviderProxy());
 
         HttpServer server = new HttpServerBuilder()

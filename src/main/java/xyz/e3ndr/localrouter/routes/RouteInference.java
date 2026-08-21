@@ -32,7 +32,7 @@ import xyz.e3ndr.localrouter.inference.Model;
 import xyz.e3ndr.localrouter.util.AuthPreprocessor;
 import xyz.e3ndr.localrouter.util.CorsPostprocessor;
 
-public class RouteV1 implements EndpointProvider {
+public class RouteInference implements EndpointProvider {
 
     @HttpEndpoint(path = "/inference/v1/models", allowedMethods = {
             HttpMethod.GET

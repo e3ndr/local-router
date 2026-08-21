@@ -39,6 +39,31 @@
 	</select>
 
 	<button
+		type="button"
+		class="focus-ring-2 rounded-lg bg-sand-3 p-2 text-sand-12 hover:bg-sand-4 focus:ring-amber-7 focus:outline-none"
+		onclick={() => {
+			prompt('Copy model name to clipboard', actual);
+		}}
+		title="Copy Model Name"
+	>
+		<span class="sr-only">Copy Model Name</span>
+
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			class="h-4 w-4"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path
+				d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+			/></svg
+		>
+	</button>
+
+	<button
 		type="submit"
 		disabled={sendButtonDisabled}
 		class:text-sand-11={sendButtonDisabled}

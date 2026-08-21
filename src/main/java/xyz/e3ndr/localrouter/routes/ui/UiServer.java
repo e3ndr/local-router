@@ -10,6 +10,7 @@ import co.casterlabs.rhs.HttpServer;
 import co.casterlabs.rhs.HttpServerBuilder;
 import co.casterlabs.rhs.protocol.api.ApiFramework;
 import co.casterlabs.rhs.protocol.http.HttpProtocol;
+import xyz.e3ndr.localrouter.util.RakuraiTaskExecutor;
 
 public class UiServer {
 
@@ -26,6 +27,7 @@ public class UiServer {
             .withKeepAliveSeconds(60)
             .withMinSoTimeoutSeconds(120)
             .withServerHeader("LocalRouter/1")
+            .withTaskExecutor(RakuraiTaskExecutor.INSTANCE)
             .with(new HttpProtocol(), framework.httpHandler)
             .build();
 

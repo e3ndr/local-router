@@ -12,11 +12,18 @@ import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 import xyz.e3ndr.localrouter.util.RsonBodyHandler;
 
 public class OllamaInferenceProvider extends OpenAIInferenceProvider {
+    private final String baseUrl;
     private final String resourcePool;
 
     public OllamaInferenceProvider(String id, JsonObject config) {
         super(id, config);
+        this.baseUrl = config.getString("url");
         this.resourcePool = config.getString("resourcePool");
+    }
+
+    @Override
+    public String v1Prefix() {
+        return "/v1";
     }
 
     @Override
@@ -27,6 +34,13 @@ public class OllamaInferenceProvider extends OpenAIInferenceProvider {
     @Override
     public InferenceProviderType type() {
         return InferenceProviderType.OLLAMA;
+    }
+
+    @Override
+    public JsonObject serializeConfig() {
+        return super.serializeConfig()
+            .put("url", this.baseUrl)
+            .put("resourcePool", this.resourcePool);
     }
 
     @Override

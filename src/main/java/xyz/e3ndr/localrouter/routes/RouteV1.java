@@ -32,9 +32,9 @@ import xyz.e3ndr.localrouter.inference.Model;
 import xyz.e3ndr.localrouter.util.AuthPreprocessor;
 import xyz.e3ndr.localrouter.util.CorsPostprocessor;
 
-public class RouteInference implements EndpointProvider {
+public class RouteV1 implements EndpointProvider {
 
-    @HttpEndpoint(path = "/inference/v1/models", allowedMethods = {
+    @HttpEndpoint(path = "/v1/models", allowedMethods = {
             HttpMethod.GET
     }, preprocessor = AuthPreprocessor.class, postprocessor = CorsPostprocessor.class)
     public HttpResponse onGetModels(HttpSession session, EndpointData<Void> data) {
@@ -77,21 +77,21 @@ public class RouteInference implements EndpointProvider {
         ).mime("application/json; charset=utf-8");
     }
 
-    @HttpEndpoint(path = "/inference/v1/chat/completions", allowedMethods = {
+    @HttpEndpoint(path = "/v1/chat/completions", allowedMethods = {
             HttpMethod.POST
     }, preprocessor = AuthPreprocessor.class, postprocessor = CorsPostprocessor.class)
     public HttpResponse onChatCompletions(HttpSession session, EndpointData<Void> data) {
         return doRequest(session, RequestType.CHAT_COMPLETIONS);
     }
 
-    @HttpEndpoint(path = "/inference/v1/completions", allowedMethods = {
+    @HttpEndpoint(path = "/v1/completions", allowedMethods = {
             HttpMethod.POST
     }, preprocessor = AuthPreprocessor.class, postprocessor = CorsPostprocessor.class)
     public HttpResponse onCompletions(HttpSession session, EndpointData<Void> data) {
         return doRequest(session, RequestType.COMPLETIONS);
     }
 
-    @HttpEndpoint(path = "/inference/v1/embeddings", allowedMethods = {
+    @HttpEndpoint(path = "/v1/embeddings", allowedMethods = {
             HttpMethod.POST
     }, preprocessor = AuthPreprocessor.class, postprocessor = CorsPostprocessor.class)
     public HttpResponse onEmbeddings(HttpSession session, EndpointData<Void> data) {

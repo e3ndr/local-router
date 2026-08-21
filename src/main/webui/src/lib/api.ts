@@ -4,7 +4,32 @@ const ENDPOINT = dev ? 'http://localhost:8081' : ``;
 
 // ----------------------------------------------------------------
 
-export declare type InferenceProviderType = 'OLLAMA' | 'VLLM' | 'OPENAI';
+export declare type InferenceProviderType =
+	| 'OLLAMA'
+	| 'VLLM'
+	| 'GENERIC'
+	| 'OPENAI'
+	| 'DEEPINFRA'
+	| 'GROQ'
+	| 'TOGETHER_AI'
+	| 'FIREWORKS_AI'
+	| 'CEREBRAS'
+	| 'DEEPSEEK'
+	| 'MISTRAL'
+	| 'XAI'
+	| 'OPENROUTER'
+	| 'PERPLEXITY'
+	| 'SAMBANOVA'
+	| 'NVIDIA_NIM'
+	| 'NOVITA'
+	| 'QWEN'
+	| 'MOONSHOT'
+	| 'GOOGLE_GEMINI'
+	| 'CHUTES'
+	| 'COHERE'
+	| 'HUGGINGFACE'
+	| 'POOLSIDE'
+	| 'BASETEN';
 
 export declare interface InferenceProvider {
 	id: string;

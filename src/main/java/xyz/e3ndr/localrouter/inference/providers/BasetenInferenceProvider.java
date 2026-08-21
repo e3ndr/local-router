@@ -3,15 +3,15 @@ package xyz.e3ndr.localrouter.inference.providers;
 import co.casterlabs.rakurai.json.element.JsonObject;
 import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 
-public class OpenAIInferenceProvider extends _OAICompatibleInferenceProvider {
+public class BasetenInferenceProvider extends _OAICompatibleInferenceProvider {
 
-    public OpenAIInferenceProvider(String id, JsonObject config) {
+    public BasetenInferenceProvider(String id, JsonObject config) {
         super(id, config);
     }
 
     @Override
     protected String baseUrl() {
-        return "https://api.openai.com";
+        return "https://inference.baseten.co";
     }
 
     @Override
@@ -21,7 +21,7 @@ public class OpenAIInferenceProvider extends _OAICompatibleInferenceProvider {
 
     @Override
     public InferenceProviderType type() {
-        return InferenceProviderType.OPENAI;
+        return InferenceProviderType.BASETEN;
     }
 
 }

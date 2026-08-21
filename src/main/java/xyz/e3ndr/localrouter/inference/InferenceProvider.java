@@ -3,7 +3,6 @@ package xyz.e3ndr.localrouter.inference;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -35,31 +34,10 @@ public interface InferenceProvider extends Closeable {
 
     public HttpResponse<InputStream> proxy(String path, Function<Builder, Builder> modify) throws IOException, InterruptedException;
 
-    default HttpResponse<InputStream> v1ChatCompletions(JsonObject body) throws IOException, InterruptedException {
-        return this.proxy(
-            "/v1/chat/completions",
-            (r) -> r
-                .POST(BodyPublishers.ofString(body.toString()))
-                .header("Content-Type", "application/json")
-        );
-    }
+    public HttpResponse<InputStream> v1ChatCompletions(JsonObject body) throws IOException, InterruptedException;
 
-    default HttpResponse<InputStream> v1Completions(JsonObject body) throws IOException, InterruptedException {
-        return this.proxy(
-            "/v1/completions",
-            (r) -> r
-                .POST(BodyPublishers.ofString(body.toString()))
-                .header("Content-Type", "application/json")
-        );
-    }
+    public HttpResponse<InputStream> v1Completions(JsonObject body) throws IOException, InterruptedException;
 
-    default HttpResponse<InputStream> v1Embeddings(JsonObject body) throws IOException, InterruptedException {
-        return this.proxy(
-            "/v1/embeddings",
-            (r) -> r
-                .POST(BodyPublishers.ofString(body.toString()))
-                .header("Content-Type", "application/json")
-        );
-    }
+    public HttpResponse<InputStream> v1Embeddings(JsonObject body) throws IOException, InterruptedException;
 
 }

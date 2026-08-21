@@ -40,7 +40,7 @@ public class RouteProviderProxy implements EndpointProvider {
         String path = session.uri().rawPath.substring("/proxy/".length() + providerId.length());
 
         boolean isInferenceEndpoint = path.startsWith("/api/generate") || path.startsWith("/api/chat") || path.startsWith("/api/embed") || // Ollama
-            path.startsWith("/v1/completions") || path.startsWith("/v1/chat/completions") || path.startsWith("/v1/embeddings"); // OpenAI
+            path.contains("/completions") || path.contains("/chat/completions") || path.contains("/embeddings"); // OpenAI
 
         // --------
 

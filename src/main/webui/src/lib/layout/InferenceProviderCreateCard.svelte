@@ -8,6 +8,9 @@
 
 	let { onUpdate }: Props = $props();
 
+	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = ['OLLAMA', 'VLLM'];
+	const REQUIRES_URL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'GENERIC'];
+
 	let type: InferenceProviderType = $state('OLLAMA');
 	let id = $state('');
 	let resourcePool = $state('');
@@ -15,7 +18,9 @@
 	let apiKey = $state('');
 
 	let sendButtonDisabled = $derived(
-		id.length == 0 || ((type as any) != 'OPENAI' && resourcePool.length == 0) || url.length == 0
+		id.length == 0 ||
+			(REQUIRES_RESOURCE_POOL.includes(type) && resourcePool.length == 0) ||
+			(REQUIRES_URL.includes(type) && url.length == 0)
 	);
 </script>
 
@@ -27,17 +32,40 @@
 		>
 			<option value="OLLAMA">Ollama</option>
 			<option value="VLLM">vLLM</option>
+			<option value="GENERIC">Generic</option>
 			<option value="OPENAI">OpenAI</option>
+			<option value="DEEPINFRA">DeepInfra</option>
+			<option value="GROQ">GROQ</option>
+			<option value="TOGETHER_AI">Together AI</option>
+			<option value="FIREWORKS_AI">Fireworks AI</option>
+			<option value="CEREBRAS">Cerebras</option>
+			<option value="DEEPSEEK">DeepSeek</option>
+			<option value="MISTRAL">Mistral</option>
+			<option value="XAI">XAI</option>
+			<option value="OPENROUTER">OpenRouter</option>
+			<option value="PERPLEXITY">Perplexity</option>
+			<option value="SAMBANOVA">SambaNova</option>
+			<option value="NVIDIA_NIM">NVIDIA NIM</option>
+			<option value="NOVITA">Novita</option>
+			<option value="QWEN">Qwen</option>
+			<option value="MOONSHOT">Moonshot</option>
+			<option value="GOOGLE_GEMINI">Google Gemini</option>
+			<option value="CHUTES">Chutes</option>
+			<option value="COHERE">Cohere</option>
+			<option value="HUGGINGFACE">HuggingFace</option>
+			<option value="POOLSIDE">Poolside</option>
+			<option value="BASETEN">BaseTen</option>
 		</select>
 
 		<input
 			bind:value={id}
 			type="text"
 			placeholder="ID..."
-			class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
+			class="h-8 w-16 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
+			class:flex-1={!REQUIRES_RESOURCE_POOL.includes(type)}
 		/>
 
-		{#if type != 'OPENAI'}
+		{#if REQUIRES_RESOURCE_POOL.includes(type)}
 			<input
 				bind:value={resourcePool}
 				type="text"
@@ -48,12 +76,14 @@
 	</div>
 
 	<div class="flex items-center space-x-2">
-		<input
-			bind:value={url}
-			type="text"
-			placeholder="URL..."
-			class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
-		/>
+		{#if REQUIRES_URL.includes(type)}
+			<input
+				bind:value={url}
+				type="text"
+				placeholder="URL..."
+				class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
+			/>
+		{/if}
 
 		<input
 			bind:value={apiKey}

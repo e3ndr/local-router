@@ -19,10 +19,10 @@ public class LR {
 
     private static final Map<String, ReentrantLock> resourcePools = new HashMap<>();
 
-    public static synchronized void lockLocalModels(String resourcePool, String currentProvider) {
+    public static synchronized LocalModelUnlocker lockLocalModels(String resourcePool, String currentProvider) throws InterruptedException {
         ReentrantLock lock = resourcePools.computeIfAbsent(resourcePool, (k) -> new ReentrantLock(true));
 
-        lock.lock();
+        lock.lockInterruptibly();
         for (InferenceProvider provider : Providers.providers()) {
             if (provider.id().equals(currentProvider)) {
                 continue;
@@ -34,11 +34,15 @@ public class LR {
                 e.printStackTrace();
             }
         }
+
+        return () -> {
+            lock.unlock();
+        };
     }
 
-    public static void unlockLocalModels(String resourcePool) {
-        ReentrantLock lock = resourcePools.get(resourcePool);
-        lock.unlock();
+    @FunctionalInterface
+    public static interface LocalModelUnlocker {
+        public void unlock();
     }
 
 }

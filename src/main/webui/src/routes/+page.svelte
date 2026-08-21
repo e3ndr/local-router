@@ -136,14 +136,66 @@
 				{#each inFlight as flight}
 					<li
 						class="flex items-center gap-2 text-sm"
-						class:text-sand-11={flight.isWaiting}
-						class:text-sand-12={!flight.isWaiting}
+						class:text-sand-11={flight.status == 'WAITING'}
+						class:text-sand-12={flight.status == 'RUNNING'}
+						class:text-[#e52a2a]={flight.status == 'CANCELLED'}
 					>
-						{#if flight.isWaiting}
-							<span class="w-3.5 translate-x-1 -translate-y-0.5">...</span>
-						{:else}
-							<LoadingSpinner />
-						{/if}
+						<button
+							onclick={() => {
+								flight.status = 'CANCELLED';
+								API.cancelInFlight(flight.id);
+							}}
+							class="group flex items-center"
+						>
+							<span class="group-hover:hidden">
+								{#if flight.status == 'WAITING'}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle
+											cx="5"
+											cy="12"
+											r="1"
+										/></svg
+									>
+								{:else if flight.status == 'CANCELLED'}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
+									>
+								{:else}
+									<LoadingSpinner />
+								{/if}
+							</span>
+
+							<span class="hidden group-hover:block">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
+								>
+							</span>
+						</button>
 
 						<span>{flight.providerId}</span>
 						<span class="text-sand-11">&bull;</span>

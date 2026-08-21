@@ -21,7 +21,7 @@ import co.casterlabs.rhs.protocol.http.HttpResponse;
 import co.casterlabs.rhs.protocol.http.HttpResponse.ResponseContent;
 import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
-import xyz.e3ndr.localrouter.InFlight.InFlightRequest;
+import xyz.e3ndr.localrouter.InFlight.InFlightStatus;
 import xyz.e3ndr.localrouter.LR;
 import xyz.e3ndr.localrouter.db.Models;
 import xyz.e3ndr.localrouter.db.Models.InferenceModelPair;
@@ -121,57 +121,62 @@ public class RouteInference implements EndpointProvider {
 
         body.put("model", imp.modelId()); // Correct the model ID to be just the model name, without the provider prefix.
 
-        InFlightRequest flight = InFlight.register(imp.provider().id(), imp.modelId());
-        boolean requiresLock = !imp.provider().isCloud();
+        // --------
 
-        Runnable cleanup = () -> {
-            flight.markCompleted();
+        final _RequestCleanup cleanup = new _RequestCleanup(Thread.currentThread());
 
-            if (requiresLock) {
-                LR.unlockLocalModels(imp.provider().resourcePool());
-            }
-        };
-
-        if (requiresLock) {
-            LR.lockLocalModels(imp.provider().resourcePool(), imp.provider().id());
-        }
-        flight.isWaiting = false;
-
-        java.net.http.HttpResponse<InputStream> result;
         try {
-            imp.provider().wakeUp();
+            cleanup.inFlight = InFlight.register(imp.provider().id(), imp.modelId(), cleanup::interrupt);
 
-            result = switch (type) {
-                case CHAT_COMPLETIONS -> imp.provider().v1ChatCompletions(body);
-                case COMPLETIONS -> imp.provider().v1Completions(body);
-                case EMBEDDINGS -> imp.provider().v1Embeddings(body);
-            };
-        } catch (IOException | InterruptedException e) {
-            cleanup.run();
-            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst fetching completions from: " + imp.provider().id() + "\n\n" + e.getMessage());
+            if (!imp.provider().isCloud()) {
+                cleanup.modelLockRelease = LR.lockLocalModels(imp.provider().resourcePool(), imp.provider().id());
+            }
+
+            cleanup.inFlight.status = InFlightStatus.RUNNING;
+
+            java.net.http.HttpResponse<InputStream> result;
+            try {
+                imp.provider().wakeUp();
+
+                result = switch (type) {
+                    case CHAT_COMPLETIONS -> imp.provider().v1ChatCompletions(body);
+                    case COMPLETIONS -> imp.provider().v1Completions(body);
+                    case EMBEDDINGS -> imp.provider().v1Embeddings(body);
+                };
+            } catch (IOException e) {
+                cleanup.close();
+                return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst fetching completions from: " + imp.provider().id() + "\n\n" + e.getMessage());
+            }
+
+            cleanup.streamToClose = result.body();
+            if (cleanup.isInterrupted.get()) {
+                throw new InterruptedException();
+            }
+
+            return new HttpResponse(
+                new ResponseContent() {
+                    @Override
+                    public void close() throws IOException {
+                        cleanup.close();
+                    }
+
+                    @Override
+                    public void write(int recommendedBufferSize, OutputStream out) throws IOException {
+                        StreamUtil.streamTransfer(result.body(), out, recommendedBufferSize);
+                    }
+
+                    @Override
+                    public long length() {
+                        return -1;
+                    }
+                },
+                HttpStatus.adapt(result.statusCode(), null)
+            )
+                .mime(result.headers().firstValue("Content-Type").orElse("application/octet-stream"));
+        } catch (InterruptedException e) {
+            cleanup.close();
+            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "Request was cancelled.");
         }
-
-        return new HttpResponse(
-            new ResponseContent() {
-                @Override
-                public void close() throws IOException {
-                    result.body().close();
-                    cleanup.run();
-                }
-
-                @Override
-                public void write(int recommendedBufferSize, OutputStream out) throws IOException {
-                    StreamUtil.streamTransfer(result.body(), out, recommendedBufferSize);
-                }
-
-                @Override
-                public long length() {
-                    return -1;
-                }
-            },
-            HttpStatus.adapt(result.statusCode(), null)
-        )
-            .mime(result.headers().firstValue("Content-Type").orElse("application/octet-stream"));
     }
 
 }

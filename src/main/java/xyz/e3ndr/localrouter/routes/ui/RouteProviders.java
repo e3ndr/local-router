@@ -66,6 +66,17 @@ public class RouteProviders implements EndpointProvider {
         ).mime("application/json; charset=utf-8");
     }
 
+    @HttpEndpoint(path = "/api/providers/inflight/:id", allowedMethods = {
+            HttpMethod.DELETE
+    }, postprocessor = CorsPostprocessor.class)
+    public HttpResponse onCancelInflight(HttpSession session, EndpointData<Void> data) {
+        String id = data.uriParameters().get("id");
+
+        InFlight.cancel(id);
+
+        return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
+    }
+
     @HttpEndpoint(path = "/api/providers", allowedMethods = {
             HttpMethod.POST
     }, postprocessor = CorsPostprocessor.class)

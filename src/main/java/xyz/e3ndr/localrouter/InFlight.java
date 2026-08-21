@@ -11,36 +11,56 @@ import co.casterlabs.rakurai.json.annotating.JsonExclude;
 import lombok.RequiredArgsConstructor;
 
 public class InFlight {
-    private static final Map<UUID, InFlightRequest> requestsInFlight = new LinkedHashMap<>();
+    private static final Map<String, InFlightRequest> requestsInFlight = new LinkedHashMap<>();
 
-    public static synchronized InFlightRequest register(String providerId, String modelId) {
-        InFlightRequest request = new InFlightRequest(UUID.randomUUID(), providerId, modelId);
+    public static synchronized InFlightRequest register(String providerId, String modelId, Runnable cancel) {
+        InFlightRequest request = new InFlightRequest(UUID.randomUUID().toString(), providerId, modelId, cancel);
         requestsInFlight.put(request.id, request);
         return request;
+    }
+
+    public static synchronized void cancel(String id) {
+        InFlightRequest request = requestsInFlight.get(id);
+        if (request != null) {
+            request.cancel();
+        }
     }
 
     public static synchronized List<InFlightRequest> inFlight() {
         return new ArrayList<>(requestsInFlight.values());
     }
 
-    private static synchronized void unregister(UUID id) {
+    private static synchronized void unregister(String id) {
         requestsInFlight.remove(id);
     }
 
     @RequiredArgsConstructor
     @JsonClass(exposeAll = true)
     public static class InFlightRequest {
-        public final @JsonExclude UUID id;
+        public final String id;
 
         public final String providerId;
         public final String modelId;
 
-        public boolean isWaiting = true;
+        public volatile InFlightStatus status = InFlightStatus.WAITING;
+
+        private final @JsonExclude Runnable cancel;
+
+        public void cancel() {
+            this.status = InFlightStatus.CANCELLED;
+            this.cancel.run();
+        }
 
         public void markCompleted() {
             unregister(this.id);
         }
 
+    }
+
+    public static enum InFlightStatus {
+        WAITING,
+        RUNNING,
+        CANCELLED
     }
 
 }

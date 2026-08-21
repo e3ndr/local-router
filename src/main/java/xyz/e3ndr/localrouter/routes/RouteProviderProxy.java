@@ -19,7 +19,7 @@ import co.casterlabs.rhs.protocol.http.HttpResponse;
 import co.casterlabs.rhs.protocol.http.HttpResponse.ResponseContent;
 import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
-import xyz.e3ndr.localrouter.InFlight.InFlightRequest;
+import xyz.e3ndr.localrouter.InFlight.InFlightStatus;
 import xyz.e3ndr.localrouter.LR;
 import xyz.e3ndr.localrouter.db.Providers;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
@@ -42,87 +42,85 @@ public class RouteProviderProxy implements EndpointProvider {
         boolean isInferenceEndpoint = path.startsWith("/api/generate") || path.startsWith("/api/chat") || path.startsWith("/api/embed") || // Ollama
             path.startsWith("/v1/completions") || path.startsWith("/v1/chat/completions") || path.startsWith("/v1/embeddings"); // OpenAI
 
-        boolean requiresLock = !provider.isCloud() && isInferenceEndpoint;
+        // --------
 
-        InFlightRequest[] $flight = {
-                null // pointer hax
-        };
-        if (isInferenceEndpoint) {
-            try {
-                JsonObject body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);
+        final _RequestCleanup cleanup = new _RequestCleanup(Thread.currentThread());
 
-                String model = body.getString("model");
-                $flight[0] = InFlight.register(providerId, model);
-            } catch (IOException ignored) {}
-        }
-
-        Runnable cleanup = () -> {
-            if ($flight[0] != null) {
-                $flight[0].markCompleted();
-            }
-
-            if (requiresLock) {
-                LR.unlockLocalModels(provider.resourcePool());
-            }
-        };
-
-        if (requiresLock) {
-            LR.lockLocalModels(provider.resourcePool(), providerId);
-            try {
-                provider.wakeUp();
-            } catch (Throwable t) {
-                cleanup.run();
-                t.printStackTrace();
-                return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst waking up: " + provider.id() + "\n\n" + t.getMessage());
-            }
-        }
-
-        if ($flight[0] != null) {
-            $flight[0].isWaiting = false;
-        }
-
-        java.net.http.HttpResponse<InputStream> result;
         try {
-            BodyPublisher body = session.body().present() ? //
-                BodyPublishers.ofByteArray(session.body().bytes()) : BodyPublishers.noBody();
+            if (isInferenceEndpoint) {
+                try {
+                    JsonObject body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);
 
-            result = provider.proxy(path, (r) -> {
-                r.method(session.rawMethod(), body);
+                    String model = body.getString("model");
+                    cleanup.inFlight = InFlight.register(providerId, model, cleanup::interrupt);
+                } catch (IOException ignored) {}
+            }
 
-                HeaderValue contentType = session.headers().getSingle("Content-Type");
-                if (contentType != null) {
-                    r.header("Content-Type", contentType.raw());
+            if (!provider.isCloud() && isInferenceEndpoint) {
+                cleanup.modelLockRelease = LR.lockLocalModels(provider.resourcePool(), providerId);
+                try {
+                    provider.wakeUp();
+                } catch (IOException e) {
+                    cleanup.close();
+                    e.printStackTrace();
+                    return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst waking up: " + provider.id() + "\n\n" + e.getMessage());
                 }
+            }
 
-                return r;
-            });
-        } catch (Throwable t) {
-            cleanup.run();
-            t.printStackTrace();
-            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst proxying request:\n\n" + t.getMessage());
+            if (cleanup.inFlight != null) {
+                cleanup.inFlight.status = InFlightStatus.RUNNING;
+            }
+
+            java.net.http.HttpResponse<InputStream> result;
+            try {
+                BodyPublisher body = session.body().present() ? //
+                    BodyPublishers.ofByteArray(session.body().bytes()) : BodyPublishers.noBody();
+
+                result = provider.proxy(path, (r) -> {
+                    r.method(session.rawMethod(), body);
+
+                    HeaderValue contentType = session.headers().getSingle("Content-Type");
+                    if (contentType != null) {
+                        r.header("Content-Type", contentType.raw());
+                    }
+
+                    return r;
+                });
+            } catch (IOException e) {
+                cleanup.close();
+                e.printStackTrace();
+                return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst proxying request:\n\n" + e.getMessage());
+            }
+
+            cleanup.streamToClose = result.body();
+            if (cleanup.isInterrupted.get()) {
+                throw new InterruptedException();
+            }
+
+            return new HttpResponse(
+                new ResponseContent() {
+                    @Override
+                    public void close() throws IOException {
+                        cleanup.close();
+                    }
+
+                    @Override
+                    public void write(int recommendedBufferSize, OutputStream out) throws IOException {
+                        StreamUtil.streamTransfer(result.body(), out, recommendedBufferSize);
+                    }
+
+                    @Override
+                    public long length() {
+                        return -1;
+                    }
+                },
+                HttpStatus.adapt(result.statusCode(), null)
+            )
+                .mime(result.headers().firstValue("Content-Type").orElse("application/octet-stream"));
+        } catch (InterruptedException e) {
+            cleanup.close();
+            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "Request was cancelled.");
         }
-
-        return new HttpResponse(
-            new ResponseContent() {
-                @Override
-                public void close() throws IOException {
-                    result.body().close();
-                    cleanup.run();
-                }
-
-                @Override
-                public void write(int recommendedBufferSize, OutputStream out) throws IOException {
-                    StreamUtil.streamTransfer(result.body(), out, recommendedBufferSize);
-                }
-
-                @Override
-                public long length() {
-                    return -1;
-                }
-            },
-            HttpStatus.adapt(result.statusCode(), null)
-        )
-            .mime(result.headers().firstValue("Content-Type").orElse("application/octet-stream"));
     }
 
 }

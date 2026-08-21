@@ -21,10 +21,13 @@ export declare interface InferenceProviderCreateRequest {
 	apiKey: string;
 }
 
+export declare type InFlightInferenceStatus = 'WAITING' | 'RUNNING' | 'CANCELLED';
+
 export declare interface InFlightInference {
+	id: string;
 	providerId: string;
 	modelId: string;
-	isWaiting: boolean;
+	status: InFlightInferenceStatus;
 }
 
 export async function listProviders(): Promise<InferenceProvider[]> {
@@ -49,6 +52,15 @@ export async function getInFlight(): Promise<InFlightInference[]> {
 		throw await response.text();
 	}
 	return await response.json();
+}
+
+export async function cancelInFlight(id: string): Promise<void> {
+	const response = await fetch(`${ENDPOINT}/api/providers/inflight/${id}`, {
+		method: 'DELETE'
+	});
+	if (!response.ok) {
+		throw await response.text();
+	}
 }
 
 export async function createProvider(req: InferenceProviderCreateRequest): Promise<void> {

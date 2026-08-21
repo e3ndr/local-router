@@ -19,13 +19,14 @@
 		class:bg-[#e52a2a]={!healthy}
 	></div>
 
-	<div class="flex flex-1 items-center">
+	<div class="flex flex-1 items-center gap-1">
 		<InferenceProviderLogo type={provider.type} />
 
-		<span class="ml-1 font-mono">{provider.id}</span>
+		<span class="font-mono">{provider.id}</span>
 
 		{#if provider.resourcePool != 'cloud'}
-			<span class="text-sm text-sand-11"> &bull; {provider.resourcePool} </span>
+			<span class="text-sm text-sand-11">&bull;</span>
+			<span class="text-sm text-sand-11">{provider.resourcePool}</span>
 		{/if}
 	</div>
 

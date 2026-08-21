@@ -18,7 +18,7 @@ public class RouteHome implements EndpointProvider {
         return HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK, "LR is running");
     }
 
-    @HttpEndpoint(path = "/inference", allowedMethods = {
+    @HttpEndpoint(path = "/v1", allowedMethods = {
             HttpMethod.GET
     }, postprocessor = CorsPostprocessor.class)
     public HttpResponse onHealthcheckRequest(HttpSession session, EndpointData<Void> data) {

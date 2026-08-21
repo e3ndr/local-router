@@ -11,7 +11,7 @@ import co.casterlabs.rakurai.json.element.JsonObject;
 import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 import xyz.e3ndr.localrouter.util.RsonBodyHandler;
 
-public class OllamaInferenceProvider extends OpenAIInferenceProvider {
+public class OllamaInferenceProvider extends _OAICompatibleInferenceProvider {
     private final String baseUrl;
     private final String resourcePool;
 
@@ -19,6 +19,11 @@ public class OllamaInferenceProvider extends OpenAIInferenceProvider {
         super(id, config);
         this.baseUrl = config.getString("url");
         this.resourcePool = config.getString("resourcePool");
+    }
+
+    @Override
+    protected String baseUrl() {
+        return this.baseUrl;
     }
 
     @Override

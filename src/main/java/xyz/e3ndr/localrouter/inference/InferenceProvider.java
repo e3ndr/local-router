@@ -21,7 +21,7 @@ public interface InferenceProvider extends Closeable {
         return this.resourcePool().equals("cloud");
     }
 
-    public Type type();
+    public InferenceProviderType type();
 
     public JsonObject serializeConfig();
 
@@ -60,12 +60,6 @@ public interface InferenceProvider extends Closeable {
                 .POST(BodyPublishers.ofString(body.toString()))
                 .header("Content-Type", "application/json")
         );
-    }
-
-    public static enum Type {
-        OLLAMA,
-        VLLM,
-        OPENAI
     }
 
 }

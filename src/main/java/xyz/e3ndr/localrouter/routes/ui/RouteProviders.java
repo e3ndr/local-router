@@ -15,6 +15,7 @@ import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
 import xyz.e3ndr.localrouter.db.Providers;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
+import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 import xyz.e3ndr.localrouter.util.CorsPostprocessor;
 
 public class RouteProviders implements EndpointProvider {
@@ -88,7 +89,7 @@ public class RouteProviders implements EndpointProvider {
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.BAD_REQUEST, "Invalid JSON body: " + e.getMessage());
         }
 
-        Providers.create(InferenceProvider.Type.valueOf(body.getString("type")), body.getString("id"), body);
+        Providers.create(InferenceProviderType.valueOf(body.getString("type")), body.getString("id"), body);
 
         return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
     }

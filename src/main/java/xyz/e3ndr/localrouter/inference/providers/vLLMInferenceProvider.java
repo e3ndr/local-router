@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import co.casterlabs.rakurai.json.element.JsonObject;
+import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 import xyz.e3ndr.localrouter.util.RsonBodyHandler;
 
 public class vLLMInferenceProvider extends OpenAIInferenceProvider {
@@ -24,8 +25,8 @@ public class vLLMInferenceProvider extends OpenAIInferenceProvider {
     }
 
     @Override
-    public Type type() {
-        return Type.VLLM;
+    public InferenceProviderType type() {
+        return InferenceProviderType.VLLM;
     }
 
     @Override

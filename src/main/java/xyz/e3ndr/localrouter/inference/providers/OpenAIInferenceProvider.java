@@ -19,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import co.casterlabs.rakurai.json.element.JsonObject;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
 import xyz.e3ndr.localrouter.inference.Model;
+import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 import xyz.e3ndr.localrouter.util.RsonBodyHandler;
 
 public class OpenAIInferenceProvider implements InferenceProvider {
@@ -47,8 +48,8 @@ public class OpenAIInferenceProvider implements InferenceProvider {
     }
 
     @Override
-    public Type type() {
-        return Type.OPENAI;
+    public InferenceProviderType type() {
+        return InferenceProviderType.OPENAI;
     }
 
     @Override

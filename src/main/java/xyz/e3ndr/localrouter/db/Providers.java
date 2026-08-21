@@ -13,9 +13,7 @@ import co.casterlabs.rakurai.json.element.JsonObject;
 import co.casterlabs.rakurai.json.serialization.JsonParseException;
 import xyz.e3ndr.localrouter.LR;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
-import xyz.e3ndr.localrouter.inference.providers.OllamaInferenceProvider;
-import xyz.e3ndr.localrouter.inference.providers.OpenAIInferenceProvider;
-import xyz.e3ndr.localrouter.inference.providers.vLLMInferenceProvider;
+import xyz.e3ndr.localrouter.inference.InferenceProviderType;
 
 public class Providers {
     private static Map<String, InferenceProvider> providers = new HashMap<>();
@@ -33,11 +31,8 @@ public class Providers {
                 String id = rs.getString("id");
                 JsonObject config = Rson.DEFAULT.fromJson(rs.getString("config"), JsonObject.class);
 
-                InferenceProvider provider = switch (InferenceProvider.Type.valueOf(config.getString("type"))) {
-                    case OLLAMA -> new OllamaInferenceProvider(id, config);
-                    case VLLM -> new vLLMInferenceProvider(id, config);
-                    case OPENAI -> new OpenAIInferenceProvider(id, config);
-                };
+                InferenceProviderType type = InferenceProviderType.valueOf(config.getString("type"));
+                InferenceProvider provider = type.factory.apply(id, config);
 
                 providers.put(id, provider);
             }
@@ -54,16 +49,12 @@ public class Providers {
         return providers.get(id);
     }
 
-    public static synchronized void create(InferenceProvider.Type type, String id, JsonObject config) {
+    public static synchronized void create(InferenceProviderType type, String id, JsonObject config) {
         if (providers.containsKey(id)) {
             throw new IllegalArgumentException("Provider with ID already exists: " + id);
         }
 
-        InferenceProvider provider = switch (type) {
-            case OLLAMA -> new OllamaInferenceProvider(id, config);
-            case VLLM -> new vLLMInferenceProvider(id, config);
-            case OPENAI -> new OpenAIInferenceProvider(id, config);
-        };
+        InferenceProvider provider = type.factory.apply(id, config);
 
         providers.put(id, provider);
 

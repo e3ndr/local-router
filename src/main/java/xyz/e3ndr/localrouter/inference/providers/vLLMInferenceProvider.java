@@ -71,28 +71,56 @@ public class vLLMInferenceProvider extends OpenAIInferenceProvider {
             return;
         }
 
-        this.sendRequest(
-            "/wake_up?tags=weights",
-            (r) -> r.POST(BodyPublishers.noBody()),
-            BodyHandlers.discarding()
-        );
-        this.sendRequest(
-            "/collective_rpc",
-            (r) -> r
-                .POST(BodyPublishers.ofString(JsonObject.singleton("method", "reload_weights").toString()))
-                .header("Content-Type", "application/json"),
-            BodyHandlers.discarding()
-        );
-        this.sendRequest(
-            "/reset_prefix_cache",
-            (r) -> r.POST(BodyPublishers.noBody()),
-            BodyHandlers.discarding()
-        );
-        this.sendRequest(
-            "/wake_up?tags=kv_cache",
-            (r) -> r.POST(BodyPublishers.noBody()),
-            BodyHandlers.discarding()
-        );
+        // vLLM's wake up process is very sensitive to interruptions, so we need to make
+        // sure we don't get interrupted during this process.
+        boolean wasInterrupted = false;
+
+        try {
+            this.sendRequest(
+                "/wake_up?tags=weights",
+                (r) -> r.POST(BodyPublishers.noBody()),
+                BodyHandlers.discarding()
+            );
+        } catch (InterruptedException ignored) {
+            wasInterrupted = true;
+            Thread.interrupted(); // Clear the interrupted status
+        }
+        try {
+            this.sendRequest(
+                "/collective_rpc",
+                (r) -> r
+                    .POST(BodyPublishers.ofString(JsonObject.singleton("method", "reload_weights").toString()))
+                    .header("Content-Type", "application/json"),
+                BodyHandlers.discarding()
+            );
+        } catch (InterruptedException ignored) {
+            wasInterrupted = true;
+            Thread.interrupted(); // Clear the interrupted status
+        }
+        try {
+            this.sendRequest(
+                "/reset_prefix_cache",
+                (r) -> r.POST(BodyPublishers.noBody()),
+                BodyHandlers.discarding()
+            );
+        } catch (InterruptedException ignored) {
+            wasInterrupted = true;
+            Thread.interrupted(); // Clear the interrupted status
+        }
+        try {
+            this.sendRequest(
+                "/wake_up?tags=kv_cache",
+                (r) -> r.POST(BodyPublishers.noBody()),
+                BodyHandlers.discarding()
+            );
+        } catch (InterruptedException ignored) {
+            wasInterrupted = true;
+            Thread.interrupted(); // Clear the interrupted status
+        }
+
+        if (wasInterrupted) {
+            throw new InterruptedException();
+        }
     }
 
 }

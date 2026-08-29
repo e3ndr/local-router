@@ -80,6 +80,11 @@ public class Pool {
             this.queue.put(inFlight.id, ticket);
             log.info(() -> "[pool] enqueued " + inFlight.id + " (" + provider.id() + " / " + modelId + ")");
 
+            // Try to dispatch now: on an empty pool (or a free slot on the
+            // active provider) this ticket may start immediately, without
+            // waiting for another request to release first.
+            this.dispatch();
+
             while (ticket.state == State.QUEUED) {
                 try {
                     if (Thread.interrupted()) {

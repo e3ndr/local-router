@@ -18,6 +18,8 @@
 	let resourcePool = $state('');
 	let url = $state('');
 	let apiKey = $state('');
+	let concurrency = $state('1');
+	let concurrencyMatchesModel = $state(false);
 
 	let sendButtonDisabled = $derived(
 		id.length == 0 ||
@@ -98,6 +100,28 @@
 				{/if}
 			</div>
 
+			{#if REQUIRES_RESOURCE_POOL.includes(type)}
+				<div class="flex items-center space-x-3">
+					<input
+						bind:value={concurrency}
+						type="number"
+						min="1"
+						placeholder="Concurrency..."
+						title="Max parallel requests on this provider (default 1)"
+						class="h-8 w-24 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
+					/>
+
+					<label class="flex items-center gap-1 text-xs text-sand-12">
+						<input
+							bind:checked={concurrencyMatchesModel}
+							type="checkbox"
+							class="rounded border-sand-4"
+						/>
+						Same-model only
+					</label>
+				</div>
+			{/if}
+
 			<div class="flex items-center space-x-2">
 				{#if REQUIRES_URL.includes(type)}
 					<input
@@ -142,7 +166,9 @@
 							id,
 							resourcePool: type == 'OPENAI' ? 'cloud' : resourcePool,
 							url,
-							apiKey
+							apiKey,
+							concurrency: Math.max(1, parseInt(concurrency) || 1),
+							concurrencyMatchesModel
 						});
 
 						creating = false;
@@ -150,6 +176,8 @@
 						resourcePool = 'local';
 						url = '';
 						apiKey = '';
+						concurrency = '1';
+						concurrencyMatchesModel = false;
 						onUpdate?.();
 					}}
 				>

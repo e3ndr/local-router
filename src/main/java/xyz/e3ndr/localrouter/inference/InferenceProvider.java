@@ -20,6 +20,23 @@ public interface InferenceProvider extends Closeable {
         return this.resourcePool().equals("cloud");
     }
 
+    /**
+     * The maximum number of in-flight requests this provider may satisfy at
+     * the same time. Defaults to 1 (fully serialized).
+     */
+    default int concurrency() {
+        return 1;
+    }
+
+    /**
+     * When true, in-flight requests on this provider must all target the same
+     * model; a request for a different model waits in the queue until the
+     * others complete. Defaults to false.
+     */
+    default boolean concurrencyMatchesModel() {
+        return false;
+    }
+
     public InferenceProviderType type();
 
     public JsonObject serializeConfig();

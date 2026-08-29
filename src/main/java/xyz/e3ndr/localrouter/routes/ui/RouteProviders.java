@@ -36,7 +36,9 @@ public class RouteProviders implements EndpointProvider {
             JsonObject entry = new JsonObject()
                 .put("id", provider.id())
                 .put("type", provider.type().name())
-                .put("resourcePool", provider.resourcePool());
+                .put("resourcePool", provider.resourcePool())
+                .put("concurrency", provider.concurrency())
+                .put("concurrencyMatchesModel", provider.concurrencyMatchesModel());
 
             // Expose the config fields the in-place editor needs to prefill. Not every
             // provider serializes every key, so only include them when present.

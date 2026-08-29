@@ -20,7 +20,7 @@ import co.casterlabs.rhs.protocol.http.HttpResponse.ResponseContent;
 import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
 import xyz.e3ndr.localrouter.InFlight.InFlightStatus;
-import xyz.e3ndr.localrouter.LR;
+import xyz.e3ndr.localrouter.Pools;
 import xyz.e3ndr.localrouter.db.Providers;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
 import xyz.e3ndr.localrouter.util.AuthPreprocessor;
@@ -45,26 +45,24 @@ public class RouteProviderProxy implements EndpointProvider {
         // --------
 
         final _RequestCleanup cleanup = new _RequestCleanup(Thread.currentThread());
+        String model = null;
 
         try {
             if (isInferenceEndpoint) {
                 try {
                     JsonObject body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);
 
-                    String model = body.getString("model");
+                    model = body.getString("model");
                     cleanup.inFlight = InFlight.register(providerId, model, cleanup::interrupt);
                 } catch (IOException ignored) {}
             }
 
-            if (!provider.isCloud() && isInferenceEndpoint) {
-                cleanup.modelLockRelease = LR.lockLocalModels(provider.resourcePool(), providerId);
-                try {
-                    provider.wakeUp();
-                } catch (IOException e) {
-                    cleanup.close();
-                    e.printStackTrace();
-                    return HttpResponse.newFixedLengthResponse(StandardHttpStatus.INTERNAL_ERROR, "An error occurred whilst waking up: " + provider.id() + "\n\n" + e.getMessage());
-                }
+            // Same gate as /inference/v1 — the proxy route must not be able
+            // to bypass the resource pool limits. (A malformed body has no
+            // model to route, so there is nothing to gate.)
+            if (!provider.isCloud() && isInferenceEndpoint && cleanup.inFlight != null) {
+                cleanup.poolTicket = Pools.pool(provider.resourcePool())
+                    .acquire(provider, model, cleanup.inFlight);
             }
 
             if (cleanup.inFlight != null) {

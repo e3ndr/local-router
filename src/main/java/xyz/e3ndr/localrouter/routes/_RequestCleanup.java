@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import lombok.RequiredArgsConstructor;
 import xyz.e3ndr.localrouter.InFlight.InFlightRequest;
-import xyz.e3ndr.localrouter.LR.LocalModelUnlocker;
+import xyz.e3ndr.localrouter.Pool;
 
 @RequiredArgsConstructor
 class _RequestCleanup implements Closeable {
@@ -16,7 +16,7 @@ class _RequestCleanup implements Closeable {
     public final AtomicBoolean isInterrupted = new AtomicBoolean(false);
 
     public InFlightRequest inFlight;
-    public LocalModelUnlocker modelLockRelease;
+    public Pool.Ticket poolTicket;
 
     public volatile InputStream streamToClose;
 
@@ -30,8 +30,8 @@ class _RequestCleanup implements Closeable {
             this.inFlight.markCompleted();
         }
 
-        if (this.modelLockRelease != null) {
-            this.modelLockRelease.unlock();
+        if (this.poolTicket != null) {
+            this.poolTicket.release();
         }
 
         if (this.streamToClose != null) {

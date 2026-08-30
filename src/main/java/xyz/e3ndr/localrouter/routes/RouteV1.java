@@ -22,7 +22,7 @@ import co.casterlabs.rhs.protocol.http.HttpResponse.ResponseContent;
 import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
 import xyz.e3ndr.localrouter.InFlight.InFlightStatus;
-import xyz.e3ndr.localrouter.LR;
+import xyz.e3ndr.localrouter.Pools;
 import xyz.e3ndr.localrouter.db.Models;
 import xyz.e3ndr.localrouter.db.Models.InferenceModelPair;
 import xyz.e3ndr.localrouter.db.Models.ModelAlias;
@@ -128,16 +128,19 @@ public class RouteV1 implements EndpointProvider {
         try {
             cleanup.inFlight = InFlight.register(imp.provider().id(), imp.modelId(), cleanup::interrupt);
 
+            // Local providers share resource pools: join the pool's fair
+            // queue. The dispatcher starts this request when it is the head
+            // and its provider's constraints allow it, and performs the
+            // sleep/wake provider switch when a new provider takes the pool.
             if (!imp.provider().isCloud()) {
-                cleanup.modelLockRelease = LR.lockLocalModels(imp.provider().resourcePool(), imp.provider().id());
+                cleanup.poolTicket = Pools.pool(imp.provider().resourcePool())
+                    .acquire(imp.provider(), imp.modelId(), cleanup.inFlight);
             }
 
             cleanup.inFlight.status = InFlightStatus.RUNNING;
 
             java.net.http.HttpResponse<InputStream> result;
             try {
-                imp.provider().wakeUp();
-
                 result = switch (type) {
                     case CHAT_COMPLETIONS -> imp.provider().v1ChatCompletions(body);
                     case COMPLETIONS -> imp.provider().v1Completions(body);

@@ -42,6 +42,8 @@ export declare interface InferenceProvider {
 	healthy: boolean;
 	url?: string;
 	apiKey?: string;
+	concurrency: number;
+	concurrencyMatchesModel: boolean;
 }
 
 export declare interface InferenceProviderCreateRequest {
@@ -50,6 +52,8 @@ export declare interface InferenceProviderCreateRequest {
 	resourcePool: string;
 	url: string;
 	apiKey: string;
+	concurrency?: number;
+	concurrencyMatchesModel?: boolean;
 }
 
 export declare type InFlightInferenceStatus = 'WAITING' | 'RUNNING' | 'CANCELLED';

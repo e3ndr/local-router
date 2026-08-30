@@ -14,11 +14,15 @@ import xyz.e3ndr.localrouter.util.RsonBodyHandler;
 public class vLLMInferenceProvider extends _OAICompatibleInferenceProvider {
     private final String baseUrl;
     private final String resourcePool;
+    private final int concurrency;
+    private final boolean concurrencyMatchesModel;
 
     public vLLMInferenceProvider(String id, JsonObject config) {
         super(id, config);
         this.baseUrl = config.getString("url");
         this.resourcePool = config.getString("resourcePool");
+        this.concurrency = config.containsKey("concurrency") ? config.getNumber("concurrency").intValue() : 1;
+        this.concurrencyMatchesModel = config.containsKey("concurrencyMatchesModel") && config.getBoolean("concurrencyMatchesModel");
     }
 
     @Override
@@ -37,6 +41,16 @@ public class vLLMInferenceProvider extends _OAICompatibleInferenceProvider {
     }
 
     @Override
+    public int concurrency() {
+        return this.concurrency;
+    }
+
+    @Override
+    public boolean concurrencyMatchesModel() {
+        return this.concurrencyMatchesModel;
+    }
+
+    @Override
     public InferenceProviderType type() {
         return InferenceProviderType.VLLM;
     }
@@ -45,7 +59,9 @@ public class vLLMInferenceProvider extends _OAICompatibleInferenceProvider {
     public JsonObject serializeConfig() {
         return super.serializeConfig()
             .put("url", this.baseUrl)
-            .put("resourcePool", this.resourcePool);
+            .put("resourcePool", this.resourcePool)
+            .put("concurrency", this.concurrency)
+            .put("concurrencyMatchesModel", this.concurrencyMatchesModel);
     }
 
     @Override

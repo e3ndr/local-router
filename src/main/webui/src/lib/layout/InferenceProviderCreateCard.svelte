@@ -87,7 +87,7 @@
 
 		<input
 			bind:value={apiKey}
-			type="text"
+			type="password"
 			placeholder="API Key (optional)..."
 			class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
 		/>

@@ -2,6 +2,10 @@ import { dev } from '$app/environment';
 
 const ENDPOINT = dev ? 'http://localhost:8081' : ``;
 
+// The list API never returns real API keys - this sentinel stands in for a stored key
+// (password-field rendering). PATCHing the sentinel back = keep the current key.
+export const API_KEY_SENTINEL = 'SENTINELDONOTUSE';
+
 // ----------------------------------------------------------------
 
 export declare type InferenceProviderType =

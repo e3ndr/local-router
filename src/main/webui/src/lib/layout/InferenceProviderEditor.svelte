@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as API from '$lib/api';
 	import type { InferenceProvider, InferenceProviderType } from '$lib/api';
+	import { API_KEY_SENTINEL } from '$lib/api';
 	import Modal from './Modal.svelte';
 
 	interface Props {
@@ -133,8 +134,9 @@
 
 			<input
 				bind:value={apiKey}
-				type="text"
+				type="password"
 				placeholder="API Key (optional)..."
+				title={apiKey == API_KEY_SENTINEL ? 'A key is set - leave as-is to keep it, or type a new key to replace it.' : 'API key (optional)'}
 				class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
 			/>
 		</div>

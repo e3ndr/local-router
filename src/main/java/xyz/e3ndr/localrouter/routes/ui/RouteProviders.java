@@ -20,6 +20,12 @@ import xyz.e3ndr.localrouter.util.CorsPostprocessor;
 
 public class RouteProviders implements EndpointProvider {
 
+    /**
+     * Stands in for a stored API key in list responses. The management panel is
+     * unauthenticated by design, so the actual key never leaves the provider.
+     */
+    public static final String API_KEY_SENTINEL = "SENTINELDONOTUSE";
+
     @HttpEndpoint(path = "/api/providers", allowedMethods = {
             HttpMethod.GET
     }, postprocessor = CorsPostprocessor.class)
@@ -40,8 +46,8 @@ public class RouteProviders implements EndpointProvider {
                 entry.put("url", url);
             }
             String apiKey = config.getString("apiKey");
-            if (apiKey != null) {
-                entry.put("apiKey", apiKey);
+            if (apiKey != null && !apiKey.isEmpty()) {
+                entry.put("apiKey", API_KEY_SENTINEL); // Blank the real key with the sentinel.
             }
 
             responseData.add(entry);
@@ -112,7 +118,8 @@ public class RouteProviders implements EndpointProvider {
     public HttpResponse onUpdate(HttpSession session, EndpointData<Void> data) {
         String providerId = data.uriParameters().get("id");
 
-        if (Providers.get(providerId) == null) {
+        InferenceProvider existing = Providers.get(providerId);
+        if (existing == null) {
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NOT_FOUND, "Provider not found: " + providerId);
         }
 
@@ -128,6 +135,14 @@ public class RouteProviders implements EndpointProvider {
             type = InferenceProviderType.valueOf(body.getString("type"));
         } catch (Exception e) {
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.BAD_REQUEST, "Invalid provider type: " + body.getString("type"));
+        }
+
+        // The unchanged sentinel means "keep the current key". The real key never crosses
+        // the wire, so snipe it from the original provider's serialized config before the
+        // provider is deleted (sentinel with no existing key = no key, never the literal).
+        if (API_KEY_SENTINEL.equals(body.getString("apiKey"))) {
+            String existingKey = existing.serializeConfig().getString("apiKey");
+            body.put("apiKey", existingKey != null ? existingKey : "");
         }
 
         // Editing a provider = remove the existing reference + insert the updated one.

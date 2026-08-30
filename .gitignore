@@ -18,3 +18,4 @@ target/
 
 # Misc
 db.sqlite
+dev.log

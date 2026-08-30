@@ -20,6 +20,12 @@ import xyz.e3ndr.localrouter.util.CorsPostprocessor;
 
 public class RouteProviders implements EndpointProvider {
 
+    /**
+     * Stands in for a stored API key in list responses. The management panel is
+     * unauthenticated by design, so the actual key never leaves the provider.
+     */
+    public static final String API_KEY_SENTINEL = "SENTINELDONOTUSE";
+
     @HttpEndpoint(path = "/api/providers", allowedMethods = {
             HttpMethod.GET
     }, postprocessor = CorsPostprocessor.class)
@@ -27,12 +33,24 @@ public class RouteProviders implements EndpointProvider {
         JsonArray responseData = new JsonArray();
 
         for (InferenceProvider provider : Providers.providers()) {
-            responseData.add(
-                new JsonObject()
-                    .put("id", provider.id())
-                    .put("type", provider.type().name())
-                    .put("resourcePool", provider.resourcePool())
-            );
+            JsonObject entry = new JsonObject()
+                .put("id", provider.id())
+                .put("type", provider.type().name())
+                .put("resourcePool", provider.resourcePool());
+
+            // Expose the config fields the in-place editor needs to prefill. Not every
+            // provider serializes every key, so only include them when present.
+            JsonObject config = provider.serializeConfig();
+            String url = config.getString("url");
+            if (url != null) {
+                entry.put("url", url);
+            }
+            String apiKey = config.getString("apiKey");
+            if (apiKey != null && !apiKey.isEmpty()) {
+                entry.put("apiKey", API_KEY_SENTINEL); // Blank the real key with the sentinel.
+            }
+
+            responseData.add(entry);
         }
 
         return HttpResponse.newFixedLengthResponse(
@@ -90,6 +108,47 @@ public class RouteProviders implements EndpointProvider {
         }
 
         Providers.create(InferenceProviderType.valueOf(body.getString("type")), body.getString("id"), body);
+
+        return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
+    }
+
+    @HttpEndpoint(path = "/api/providers/:id", allowedMethods = {
+            HttpMethod.PATCH
+    }, postprocessor = CorsPostprocessor.class)
+    public HttpResponse onUpdate(HttpSession session, EndpointData<Void> data) {
+        String providerId = data.uriParameters().get("id");
+
+        InferenceProvider existing = Providers.get(providerId);
+        if (existing == null) {
+            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NOT_FOUND, "Provider not found: " + providerId);
+        }
+
+        JsonObject body;
+        try {
+            body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);
+        } catch (IOException e) {
+            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.BAD_REQUEST, "Invalid JSON body: " + e.getMessage());
+        }
+
+        InferenceProviderType type;
+        try {
+            type = InferenceProviderType.valueOf(body.getString("type"));
+        } catch (Exception e) {
+            return HttpResponse.newFixedLengthResponse(StandardHttpStatus.BAD_REQUEST, "Invalid provider type: " + body.getString("type"));
+        }
+
+        // The unchanged sentinel means "keep the current key". The real key never crosses
+        // the wire, so snipe it from the original provider's serialized config before the
+        // provider is deleted (sentinel with no existing key = no key, never the literal).
+        if (API_KEY_SENTINEL.equals(body.getString("apiKey"))) {
+            String existingKey = existing.serializeConfig().getString("apiKey");
+            body.put("apiKey", existingKey != null ? existingKey : "");
+        }
+
+        // Editing a provider = remove the existing reference + insert the updated one.
+        // Providers.create() re-sanitizes the config via provider.serializeConfig().
+        Providers.remove(providerId);
+        Providers.create(type, providerId, body);
 
         return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
     }

@@ -2,6 +2,10 @@ import { dev } from '$app/environment';
 
 const ENDPOINT = dev ? 'http://localhost:8081' : ``;
 
+// The list API never returns real API keys - this sentinel stands in for a stored key
+// (password-field rendering). PATCHing the sentinel back = keep the current key.
+export const API_KEY_SENTINEL = 'SENTINELDONOTUSE';
+
 // ----------------------------------------------------------------
 
 export declare type InferenceProviderType =
@@ -36,6 +40,8 @@ export declare interface InferenceProvider {
 	type: InferenceProviderType;
 	resourcePool: string;
 	healthy: boolean;
+	url?: string;
+	apiKey?: string;
 }
 
 export declare interface InferenceProviderCreateRequest {
@@ -104,6 +110,19 @@ export async function createProvider(req: InferenceProviderCreateRequest): Promi
 export async function deleteProvider(id: string): Promise<void> {
 	const response = await fetch(`${ENDPOINT}/api/providers/${id}`, {
 		method: 'DELETE'
+	});
+	if (!response.ok) {
+		throw await response.text();
+	}
+}
+
+export async function updateProvider(id: string, req: InferenceProviderCreateRequest): Promise<void> {
+	const response = await fetch(`${ENDPOINT}/api/providers/${id}`, {
+		method: 'PATCH',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(req)
 	});
 	if (!response.ok) {
 		throw await response.text();

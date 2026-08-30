@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as API from '$lib/api';
 	import CopyModal from './CopyModal.svelte';
+	import Modal from './Modal.svelte';
 
 	interface Props {
 		onUpdate?: () => void;
@@ -8,61 +9,77 @@
 
 	let { onUpdate }: Props = $props();
 
+	let creating = $state(false);
 	let description = $state('');
 	let createdKey: string | null = $state(null);
 
 	let sendButtonDisabled = $derived(description.length == 0);
 </script>
 
-<form autocomplete="off" onsubmit={() => {}} class="mt-6 flex items-center space-x-2">
-	<input
-		bind:value={description}
-		type="text"
-		placeholder="Description..."
-		class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
-	/>
+<button
+	type="button"
+	onclick={() => (creating = true)}
+	class="mt-6 flex items-center gap-1.5 rounded-lg bg-sand-3 p-2 text-xs text-sand-12 hover:bg-sand-4 focus:ring-2 focus:ring-amber-7 focus:outline-none"
+>
+	<span>Issue a new API Key</span>
 
-	<button
-		type="submit"
-		disabled={sendButtonDisabled}
-		class:text-sand-11={sendButtonDisabled}
-		class:text-sand-12={!sendButtonDisabled}
-		class:focus-ring-2={!sendButtonDisabled}
-		class:hover:bg-sand-4={!sendButtonDisabled}
-		class="rounded-lg bg-sand-3 p-2 focus:ring-amber-7 focus:outline-none"
-		onclick={async () => {
-			if (sendButtonDisabled) return;
-
-			const created = await API.createApiKey(description);
-
-			createdKey = created.key as string;
-			description = '';
-			onUpdate?.();
-		}}
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		class="h-4 w-4"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"><path
+		d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+	/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor" /></svg
 	>
-		<span class="sr-only">Issue a new API Key</span>
+</button>
 
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			class="h-4 w-4"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			><path
-				d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
-			/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor" /></svg
-		>
-	</button>
-</form>
+{#if creating}
+	<Modal title="Issue a new API Key" onClose={() => (creating = false)}>
+		<form autocomplete="off" onsubmit={() => {}} class="space-y-2">
+			<input
+				bind:value={description}
+				type="text"
+				placeholder="Description..."
+				class="h-8 w-full rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
+			/>
+
+			<div class="flex justify-end">
+				<button
+					type="submit"
+					disabled={sendButtonDisabled}
+					class:text-sand-11={sendButtonDisabled}
+					class:text-sand-12={!sendButtonDisabled}
+					class="rounded-lg bg-sand-3 px-3 py-1.5 text-xs focus:ring-amber-7 focus:outline-none"
+					class:hover:bg-sand-4={!sendButtonDisabled}
+					onclick={async () => {
+						if (sendButtonDisabled) {
+							return;
+						}
+
+						const created = await API.createApiKey(description);
+
+						creating = false;
+						createdKey = created.key as string;
+						description = '';
+						onUpdate?.();
+					}}
+				>
+					Issue
+				</button>
+			</div>
+		</form>
+	</Modal>
+{/if}
 
 {#if createdKey}
-<CopyModal
-	title="API Key created"
-	message="Please copy it now, as it will not be shown again."
-	value={createdKey}
-	onClose={() => (createdKey = null)}
-/>
+	<CopyModal
+		title="API Key created"
+		message="Please copy it now, as it will not be shown again."
+		value={createdKey}
+		onClose={() => (createdKey = null)}
+	/>
 {/if}

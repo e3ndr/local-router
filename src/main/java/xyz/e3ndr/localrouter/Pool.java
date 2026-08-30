@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import xyz.e3ndr.localrouter.InFlight.InFlightRequest;
+import xyz.e3ndr.localrouter.db.Providers;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
 
 /**
@@ -112,9 +113,7 @@ public class Pool {
 
         if (needsSwitch) {
             try {
-                if (switchedFrom != null) {
-                    this.sleepQuietly(switchedFrom);
-                }
+                this.sleepOtherProviders(provider);
                 provider.wakeUp();
             } catch (InterruptedException e) {
                 // Cancelled mid-switch: give back the slot we just took.
@@ -230,6 +229,20 @@ public class Pool {
             Thread.currentThread().interrupt(); // Keep the flag; the wake-up/callers react to it.
         } catch (Exception e) {
             log.warning(() -> "[pool] failed to sleep provider " + provider.id() + ": " + e);
+        }
+    }
+
+    private void sleepOtherProviders(InferenceProvider provider) {
+        for (InferenceProvider other : Providers.providers()) {
+            if (other == provider) {
+                continue;
+            }
+
+            if (!provider.resourcePool().equals(other.resourcePool())) {
+                continue;
+            }
+
+            this.sleepQuietly(other);
         }
     }
 

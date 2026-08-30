@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Model } from '$lib/api';
 	import * as API from '$lib/api';
+	import CopyModal from './CopyModal.svelte';
 
 	interface Props {
 		models: Model[];
@@ -11,6 +12,7 @@
 
 	let alias = $state('');
 	let actual = $state('');
+	let copyValue: string | null = $state(null);
 
 	let sendButtonDisabled = $derived(alias.length == 0 || actual.length == 0);
 
@@ -42,7 +44,7 @@
 		type="button"
 		class="focus-ring-2 rounded-lg bg-sand-3 p-2 text-sand-12 hover:bg-sand-4 focus:ring-amber-7 focus:outline-none"
 		onclick={() => {
-			prompt('Copy model name to clipboard', actual);
+			copyValue = actual;
 		}}
 		title="Copy Model Name"
 	>
@@ -98,3 +100,12 @@
 		>
 	</button>
 </form>
+
+{#if copyValue}
+<CopyModal
+	title="Copy model name to clipboard"
+	message="Copy the model name below."
+	value={copyValue}
+	onClose={() => (copyValue = null)}
+/>
+{/if}

@@ -7,9 +7,10 @@
 		provider: InferenceProvider;
 		healthy: boolean;
 		onUpdate?: () => void;
+		onEdit?: () => void;
 	}
 
-	let { provider, healthy, onUpdate }: Props = $props();
+	let { provider, healthy, onUpdate, onEdit }: Props = $props();
 </script>
 
 <div class="flex items-center gap-2 rounded-lg border border-sand-6 bg-sand-2 p-2">
@@ -29,6 +30,24 @@
 			<span class="text-sm text-sand-11">{provider.resourcePool}</span>
 		{/if}
 	</div>
+
+	<button
+		onclick={() => onEdit?.()}
+		class="float-right rounded-lg p-1 text-sm text-sand-11 hover:bg-sand-4 hover:text-sand-12 focus:ring-2 focus:ring-amber-7 focus:outline-none active:bg-sand-4"
+	>
+		<span class="sr-only">Edit Inference Provider</span>
+
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			class="h-4 w-4"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg
+	>
+	</button>
 
 	<button
 		onclick={async () => {

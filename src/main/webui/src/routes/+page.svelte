@@ -5,6 +5,7 @@
 	import ApiKeyCreateCard from '$lib/layout/ApiKeyCreateCard.svelte';
 	import InferenceProviderCard from '$lib/layout/InferenceProviderCard.svelte';
 	import InferenceProviderCreateCard from '$lib/layout/InferenceProviderCreateCard.svelte';
+	import InferenceProviderEditor from '$lib/layout/InferenceProviderEditor.svelte';
 	import InferenceProviderLogo from '$lib/layout/InferenceProviderLogo.svelte';
 	import LoadingSpinner from '$lib/layout/LoadingSpinner.svelte';
 	import ModelAliasCard from '$lib/layout/ModelAliasCard.svelte';
@@ -19,6 +20,7 @@
 	let modelAliases: ModelAlias[] = $state([]);
 	let models: Model[] = $state([]);
 	let providers: InferenceProvider[] = $state([]);
+	let editingProvider: InferenceProvider | null = $state(null);
 
 	let providerHealth: Record<string, boolean> = $state({});
 	let providersById: Record<string, InferenceProvider> = $state({});
@@ -121,6 +123,7 @@
 							{provider}
 							healthy={providerHealth[provider.id] ?? false}
 							onUpdate={() => providerRerender++}
+							onEdit={() => (editingProvider = provider)}
 						/>
 					</li>
 				{/each}
@@ -130,6 +133,17 @@
 		{/if}
 
 		<InferenceProviderCreateCard onUpdate={() => providerRerender++} />
+
+		{#if editingProvider}
+			<InferenceProviderEditor
+				provider={editingProvider}
+				onClose={() => (editingProvider = null)}
+				onSaved={() => {
+					editingProvider = null;
+					providerRerender++;
+				}}
+			/>
+		{/if}
 	</div>
 
 	<div>

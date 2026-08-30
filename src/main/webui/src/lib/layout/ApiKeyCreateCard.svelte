@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as API from '$lib/api';
+	import CopyModal from './CopyModal.svelte';
 
 	interface Props {
 		onUpdate?: () => void;
@@ -8,6 +9,7 @@
 	let { onUpdate }: Props = $props();
 
 	let description = $state('');
+	let createdKey: string | null = $state(null);
 
 	let sendButtonDisabled = $derived(description.length == 0);
 </script>
@@ -33,11 +35,7 @@
 
 			const created = await API.createApiKey(description);
 
-			prompt(
-				'API Key created.\n\nPlease copy it now, as it will not be shown again.\n',
-				created.key as string
-			);
-
+			createdKey = created.key as string;
 			description = '';
 			onUpdate?.();
 		}}
@@ -59,3 +57,12 @@
 		>
 	</button>
 </form>
+
+{#if createdKey}
+<CopyModal
+	title="API Key created"
+	message="Please copy it now, as it will not be shown again."
+	value={createdKey}
+	onClose={() => (createdKey = null)}
+/>
+{/if}

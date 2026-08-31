@@ -15,37 +15,36 @@ import xyz.e3ndr.localrouter.inference.InferenceProvider;
  * The coordinator for one resource pool.
  *
  * The VRAM invariant: at most one provider in a pool may hold in-flight
- * requests at a time. When a different provider's request has a clear path,
- * the previous provider is slept and the new one is woken. Providers are
- * kept warm otherwise: a provider is never slept just because its queue is
- * empty (load times can be penalizing), it stays active until another
- * provider takes the pool.
+ * requests at a time. When a different provider's request has a clear path, the
+ * previous provider is slept and the new one is woken. Providers are kept warm
+ * otherwise: a provider is never slept just because its queue is empty (load
+ * times can be penalizing), it stays active until another provider takes the
+ * pool.
  *
  * Fairness: every local request joins a single FIFO queue for the pool. A
  * request only starts when it is the head of the queue and its constraints
  * allow it to run:
  *
- * - the pool is empty, or
- * - it is on the active provider, there is a free concurrency slot, and
- *   (if the provider is configured to) all in-flight requests target the
- *   same model.
+ * - the pool is empty, or - it is on the active provider, there is a free
+ * concurrency slot, and (if the provider is configured to) all in-flight
+ * requests target the same model.
  *
- * A request on the active provider with a free slot still waits behind
- * earlier requests from other providers — no skipping the line.
+ * A request on the active provider with a free slot still waits behind earlier
+ * requests from other providers — no skipping the line.
  */
 public class Pool {
     private static final Logger log = Logger.getLogger(Pool.class.getName());
 
     /**
-     * The fair lock: the queue order is strictly by arrival, and only the
-     * head is ever considered.
+     * The fair lock: the queue order is strictly by arrival, and only the head is
+     * ever considered.
      */
     private final ReentrantLock lock = new ReentrantLock(true);
     private final Condition drained = this.lock.newCondition();
 
     /**
-     * The provider currently holding in-flight requests in this pool, or
-     * null when the pool is empty.
+     * The provider currently holding in-flight requests in this pool, or null when
+     * the pool is empty.
      */
     private InferenceProvider active;
 
@@ -62,18 +61,16 @@ public class Pool {
     /**
      * Join the queue, wait for this request's turn, start it, and return the
      * ticket. Blocks until the request is dispatched, or the thread is
-     * interrupted/cancelled (in which case the queue slot is released and
-     * an {@link InterruptedException} is thrown).
+     * interrupted/cancelled (in which case the queue slot is released and an
+     * {@link InterruptedException} is thrown).
      *
-     * When this request is the one that activates a new provider, the
-     * switch work (sleeping the previous provider + waking this one) is
-     * performed here, outside the pool lock, so a slow wake-up does not
-     * hold up the queue.
+     * When this request is the one that activates a new provider, the switch work
+     * (sleeping the previous provider + waking this one) is performed here, outside
+     * the pool lock, so a slow wake-up does not hold up the queue.
      */
     public Ticket acquire(InferenceProvider provider, String modelId, InFlightRequest inFlight) throws InterruptedException {
         Ticket ticket;
         boolean needsSwitch;
-        InferenceProvider switchedFrom;
 
         this.lock.lockInterruptibly();
         try {
@@ -106,7 +103,6 @@ public class Pool {
             }
 
             needsSwitch = ticket.isSwitch;
-            switchedFrom = ticket.switchedFrom;
         } finally {
             this.lock.unlock();
         }
@@ -129,8 +125,8 @@ public class Pool {
     }
 
     /**
-     * Release a started request's slot. Idempotent — safe to call from both
-     * the request's cleanup path and an error path.
+     * Release a started request's slot. Idempotent — safe to call from both the
+     * request's cleanup path and an error path.
      */
     public void release(Ticket ticket) {
         this.lock.lock();
@@ -155,8 +151,8 @@ public class Pool {
     }
 
     /**
-     * Drop a queued (not yet started) request from the line and let the
-     * dispatcher re-evaluate the new head.
+     * Drop a queued (not yet started) request from the line and let the dispatcher
+     * re-evaluate the new head.
      */
     private void interruptQueued(Ticket ticket) {
         if (this.queue.remove(ticket.inFlight.id) != null) {
@@ -167,8 +163,8 @@ public class Pool {
     }
 
     /**
-     * Start queued requests from the head of the line while the head is
-     * allowed to run. Must be called with the lock held.
+     * Start queued requests from the head of the line while the head is allowed to
+     * run. Must be called with the lock held.
      */
     private void dispatch() {
         while (!this.queue.isEmpty()) {
@@ -195,8 +191,8 @@ public class Pool {
     }
 
     /**
-     * May the given ticket (always the head of the queue when called) start
-     * now? Must be called with the lock held.
+     * May the given ticket (always the head of the queue when called) start now?
+     * Must be called with the lock held.
      */
     private boolean canStart(Ticket head) {
         if (this.active == null) {
@@ -265,8 +261,8 @@ public class Pool {
         volatile State state = State.QUEUED;
 
         /**
-         * True when starting this ticket activated a new provider for the
-         * pool (the switch work was performed in {@link #acquire}).
+         * True when starting this ticket activated a new provider for the pool (the
+         * switch work was performed in {@link #acquire}).
          */
         volatile boolean isSwitch;
 
@@ -283,8 +279,8 @@ public class Pool {
         }
 
         /**
-         * Release this ticket's pool slot. Idempotent — the request's
-         * cleanup path calls it exactly once, and error paths may not.
+         * Release this ticket's pool slot. Idempotent — the request's cleanup path
+         * calls it exactly once, and error paths may not.
          */
         public void release() {
             this.pool.release(this);

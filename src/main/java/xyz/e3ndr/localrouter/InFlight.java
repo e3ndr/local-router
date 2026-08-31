@@ -1,9 +1,9 @@
 package xyz.e3ndr.localrouter;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.UUID;
 
 import co.casterlabs.rakurai.json.annotating.JsonClass;
@@ -11,26 +11,26 @@ import co.casterlabs.rakurai.json.annotating.JsonExclude;
 import lombok.RequiredArgsConstructor;
 
 public class InFlight {
-    private static final Map<String, InFlightRequest> requestsInFlight = new LinkedHashMap<>();
+    private static final ConcurrentMap<String, InFlightRequest> requestsInFlight = new ConcurrentHashMap<>();
 
-    public static synchronized InFlightRequest register(String providerId, String modelId, Runnable cancel) {
+    public static InFlightRequest register(String providerId, String modelId, Runnable cancel) {
         InFlightRequest request = new InFlightRequest(UUID.randomUUID().toString(), providerId, modelId, cancel);
         requestsInFlight.put(request.id, request);
         return request;
     }
 
-    public static synchronized void cancel(String id) {
+    public static void cancel(String id) {
         InFlightRequest request = requestsInFlight.get(id);
         if (request != null) {
             request.cancel();
         }
     }
 
-    public static synchronized List<InFlightRequest> inFlight() {
+    public static List<InFlightRequest> inFlight() {
         return new ArrayList<>(requestsInFlight.values());
     }
 
-    private static synchronized void unregister(String id) {
+    private static void unregister(String id) {
         requestsInFlight.remove(id);
     }
 

@@ -24,7 +24,7 @@ public class UiServer {
         HttpServer server = new HttpServerBuilder()
             .withPort(8081)
             .withBehindProxy(true)
-            .withKeepAliveSeconds(60)
+            .withKeepAliveSeconds(-1)
             .withMinSoTimeoutSeconds(120)
             .withServerHeader("LocalRouter/1")
             .withTaskExecutor(RakuraiTaskExecutor.INSTANCE)

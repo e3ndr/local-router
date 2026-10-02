@@ -12,8 +12,8 @@
 
 	let { provider, onClose, onSaved }: Props = $props();
 
-	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = ['OLLAMA', 'VLLM'];
-	const REQUIRES_URL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'GENERIC'];
+	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'VLLM_OMNI'];
+	const REQUIRES_URL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'VLLM_OMNI', 'GENERIC'];
 
 	let type: InferenceProviderType = $state('OLLAMA');
 	let id = $state('');
@@ -46,6 +46,7 @@
 	const TYPE_OPTIONS: [InferenceProviderType, string][] = [
 		['OLLAMA', 'Ollama'],
 		['VLLM', 'vLLM'],
+		['VLLM_OMNI', 'vLLM Omni'],
 		['GENERIC', 'Generic'],
 		['OPENAI', 'OpenAI'],
 		['DEEPINFRA', 'DeepInfra'],
@@ -106,7 +107,7 @@
 				bind:value={type}
 			>
 				{#each TYPE_OPTIONS as [value, label]}
-					<option value={value}>{label}</option>
+					<option {value}>{label}</option>
 				{/each}
 			</select>
 
@@ -164,7 +165,9 @@
 				bind:value={apiKey}
 				type="password"
 				placeholder="API Key (optional)..."
-				title={apiKey == API_KEY_SENTINEL ? 'A key is set - leave as-is to keep it, or type a new key to replace it.' : 'API key (optional)'}
+				title={apiKey == API_KEY_SENTINEL
+					? 'A key is set - leave as-is to keep it, or type a new key to replace it.'
+					: 'API key (optional)'}
 				class="h-8 w-full flex-1 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
 			/>
 		</div>

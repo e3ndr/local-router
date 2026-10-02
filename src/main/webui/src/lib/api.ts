@@ -11,6 +11,7 @@ export const API_KEY_SENTINEL = 'SENTINELDONOTUSE';
 export declare type InferenceProviderType =
 	| 'OLLAMA'
 	| 'VLLM'
+	| 'VLLM_OMNI'
 	| 'GENERIC'
 	| 'OPENAI'
 	| 'DEEPINFRA'
@@ -120,7 +121,10 @@ export async function deleteProvider(id: string): Promise<void> {
 	}
 }
 
-export async function updateProvider(id: string, req: InferenceProviderCreateRequest): Promise<void> {
+export async function updateProvider(
+	id: string,
+	req: InferenceProviderCreateRequest
+): Promise<void> {
 	const response = await fetch(`${ENDPOINT}/api/providers/${id}`, {
 		method: 'PATCH',
 		headers: {

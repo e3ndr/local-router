@@ -29,11 +29,13 @@ import xyz.e3ndr.localrouter.inference.providers.SambaNovaInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.TogetherAIInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.XAIInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.vLLMInferenceProvider;
+import xyz.e3ndr.localrouter.inference.providers.vLLMOmniInferenceProvider;
 
 @RequiredArgsConstructor
 public enum InferenceProviderType {
     OLLAMA(OllamaInferenceProvider::new),
     VLLM(vLLMInferenceProvider::new),
+    VLLM_OMNI(vLLMOmniInferenceProvider::new),
     GENERIC(GenericInferenceProvider::new),
 
     OPENAI(OpenAIInferenceProvider::new),

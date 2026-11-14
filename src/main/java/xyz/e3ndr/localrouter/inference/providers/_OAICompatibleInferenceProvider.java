@@ -93,14 +93,6 @@ abstract class _OAICompatibleInferenceProvider implements InferenceProvider {
 
     @Override
     public List<Model> models() throws IOException, InterruptedException {
-        System.out.println(
-            this.sendRequest(
-                this.v1Prefix() + "/models",
-                Function.identity(),
-                BodyHandlers.ofString()
-            ).body()
-        );
-
         return this.sendRequest(
             this.v1Prefix() + "/models",
             Function.identity(),

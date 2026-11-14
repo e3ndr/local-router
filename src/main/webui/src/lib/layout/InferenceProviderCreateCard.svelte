@@ -9,8 +9,19 @@
 
 	let { onUpdate }: Props = $props();
 
-	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'VLLM_OMNI'];
-	const REQUIRES_URL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'VLLM_OMNI', 'GENERIC'];
+	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI',
+		'KOKORO_FASTAPI'
+	];
+	const REQUIRES_URL: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI',
+		'KOKORO_FASTAPI',
+		'GENERIC'
+	];
 
 	let creating = $state(false);
 	let type: InferenceProviderType = $state('OLLAMA');
@@ -58,6 +69,7 @@
 					<option value="OLLAMA">Ollama</option>
 					<option value="VLLM">vLLM</option>
 					<option value="VLLM_OMNI">vLLM Omni</option>
+					<option value="KOKORO_FASTAPI">Kokoro FastAPI</option>
 					<option value="GENERIC">Generic</option>
 					<option value="OPENAI">OpenAI</option>
 					<option value="DEEPINFRA">DeepInfra</option>

@@ -15,6 +15,7 @@ import xyz.e3ndr.localrouter.inference.providers.GenericInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.GoogleGeminiInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.GroqInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.HuggingFaceInferenceProvider;
+import xyz.e3ndr.localrouter.inference.providers.KokoroFastAPIInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.MistralInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.MoonshotInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.NovitaInferenceProvider;
@@ -36,6 +37,7 @@ public enum InferenceProviderType {
     OLLAMA(OllamaInferenceProvider::new),
     VLLM(vLLMInferenceProvider::new),
     VLLM_OMNI(vLLMOmniInferenceProvider::new),
+    KOKORO_FASTAPI(KokoroFastAPIInferenceProvider::new),
     GENERIC(GenericInferenceProvider::new),
 
     OPENAI(OpenAIInferenceProvider::new),

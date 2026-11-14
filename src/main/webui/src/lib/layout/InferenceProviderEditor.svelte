@@ -12,8 +12,19 @@
 
 	let { provider, onClose, onSaved }: Props = $props();
 
-	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'VLLM_OMNI'];
-	const REQUIRES_URL: InferenceProviderType[] = ['OLLAMA', 'VLLM', 'VLLM_OMNI', 'GENERIC'];
+	const REQUIRES_RESOURCE_POOL: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI',
+		'KOKORO_FASTAPI'
+	];
+	const REQUIRES_URL: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI',
+		'KOKORO_FASTAPI',
+		'GENERIC'
+	];
 
 	let type: InferenceProviderType = $state('OLLAMA');
 	let id = $state('');
@@ -47,6 +58,7 @@
 		['OLLAMA', 'Ollama'],
 		['VLLM', 'vLLM'],
 		['VLLM_OMNI', 'vLLM Omni'],
+		['KOKORO_FASTAPI', 'Kokoro FastAPI'],
 		['GENERIC', 'Generic'],
 		['OPENAI', 'OpenAI'],
 		['DEEPINFRA', 'DeepInfra'],

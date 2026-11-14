@@ -26,8 +26,8 @@ Then open the local UI on port 8081 and create your providers, aliases, and API 
 Local Router can:
 
 - aggregate providers from Ollama, vLLM, and generic OpenAI-compatible servers
-- expose a single OpenAI-style API at `/inference/v1/`\*
-- route requests by provider and model name such as provider.model
+- expose a single OpenAI-style API at `/v1/`\*
+- route requests by provider and model name such as `provider.model`
 - resolve friendly model aliases like `my-phi` -> `llama3.1:8b`
 - keep only one local provider active per shared resource pool
 - send sleep and wake commands to backends when needed
@@ -59,6 +59,9 @@ The code includes three provider types:
   - checks `/health` and `/is_sleeping`
   - sleeps via `/sleep?level=2`
   - wakes via `/wake_up?tags=weights`, `/collective_rpc`, `/reset_prefix_cache`, `/wake_up?tags=kv_cache`
+- KOKORO_FASTAPI
+  - checks `/health`
+  - sleeps via `/dev/unload` (requires ALLOW_DEV_UNLOAD=true)
 - OPENAI
   - generic OpenAI-compatible provider proxying
   - treated as cloud-like by default, so it does not participate in the local resource lock
@@ -67,7 +70,7 @@ The code includes three provider types:
 
 The request flow is roughly:
 
-1. a client calls /inference/v1/chat/completions or the equivalent
+1. a client calls /v1/chat/completions or the equivalent
 2. the model name is resolved through the configured alias/provider mapping
 3. the router chooses the provider and checks whether it is local
 4. if it is local and belongs to a resourcePool, it locks that pool
@@ -119,46 +122,12 @@ The UI includes:
 - model alias management
 - live in-flight request monitoring
 
-## Example configuration
-
-Providers are created through the UI, but the underlying config structure is simple:
-
-```json
-{
-  "id": "ollama",
-  "type": "OLLAMA",
-  "url": "http://localhost:11434",
-  "resourcePool": "gpu-a"
-}
-```
-
-```json
-{
-  "id": "vllm",
-  "type": "VLLM",
-  "url": "http://localhost:8000",
-  "resourcePool": "gpu-a"
-}
-```
-
-```json
-{
-  "id": "openai",
-  "type": "OPENAI",
-  "url": "https://api.openai.com",
-  "apiKey": "sk-...",
-  "resourcePool": "cloud"
-}
-```
-
-The resourcePool is what decides whether a provider participates in local sleeping behavior. Cloud providers are not locked and are treated as external resources.
-
 ## Request examples
 
 OpenAI-style request through the router:
 
 ```bash
-curl -X POST http://localhost:8080/inference/v1/chat/completions \
+curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{

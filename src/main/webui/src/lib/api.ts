@@ -13,6 +13,7 @@ export declare type InferenceProviderType =
 	| 'VLLM'
 	| 'VLLM_OMNI'
 	| 'KOKORO_FASTAPI'
+	| 'PARAKEET'
 	| 'GENERIC'
 	| 'OPENAI'
 	| 'DEEPINFRA'

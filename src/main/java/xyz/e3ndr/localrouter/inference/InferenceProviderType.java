@@ -23,6 +23,7 @@ import xyz.e3ndr.localrouter.inference.providers.NvidiaNimInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.OllamaInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.OpenAIInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.OpenRouterInferenceProvider;
+import xyz.e3ndr.localrouter.inference.providers.ParakeetInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.PerplexityInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.PoolsideInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.QwenInferenceProvider;
@@ -38,6 +39,7 @@ public enum InferenceProviderType {
     VLLM(vLLMInferenceProvider::new),
     VLLM_OMNI(vLLMOmniInferenceProvider::new),
     KOKORO_FASTAPI(KokoroFastAPIInferenceProvider::new),
+    PARAKEET(ParakeetInferenceProvider::new),
     GENERIC(GenericInferenceProvider::new),
 
     OPENAI(OpenAIInferenceProvider::new),

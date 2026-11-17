@@ -16,13 +16,15 @@
 		'OLLAMA',
 		'VLLM',
 		'VLLM_OMNI',
-		'KOKORO_FASTAPI'
+		'KOKORO_FASTAPI',
+		'PARAKEET'
 	];
 	const REQUIRES_URL: InferenceProviderType[] = [
 		'OLLAMA',
 		'VLLM',
 		'VLLM_OMNI',
 		'KOKORO_FASTAPI',
+		'PARAKEET',
 		'GENERIC'
 	];
 
@@ -59,6 +61,7 @@
 		['VLLM', 'vLLM'],
 		['VLLM_OMNI', 'vLLM Omni'],
 		['KOKORO_FASTAPI', 'Kokoro FastAPI'],
+		['PARAKEET', 'Parakeet'],
 		['GENERIC', 'Generic'],
 		['OPENAI', 'OpenAI'],
 		['DEEPINFRA', 'DeepInfra'],

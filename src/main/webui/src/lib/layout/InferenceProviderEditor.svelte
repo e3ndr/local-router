@@ -20,8 +20,6 @@
 		'PARAKEET',
 		'COMFYUI'
 	];
-	// ComfyUI is driven by workflow prompts through the passthrough, so its
-	// concurrency cannot be configured or ascertained.
 	const SUPPORTS_CONCURRENCY: InferenceProviderType[] = [
 		'OLLAMA',
 		'VLLM',
@@ -29,8 +27,6 @@
 		'KOKORO_FASTAPI',
 		'PARAKEET'
 	];
-	// Kokoro + Parakeet serve a single model - there is nothing for
-	// "same-model only" to match.
 	const MATCHES_MODEL_TYPES: InferenceProviderType[] = [
 		'OLLAMA',
 		'VLLM',

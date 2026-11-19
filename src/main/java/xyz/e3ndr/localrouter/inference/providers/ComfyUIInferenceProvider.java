@@ -30,11 +30,9 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
         return this.baseUrl;
     }
 
-    // ComfyUI's API has no OpenAI-compatible prefix - only referenced by base
-    // methods this class overrides.
     @Override
     public String v1Prefix() {
-        return "";
+        return ""; // ComfyUI has no OpenAI-compatible prefix
     }
 
     @Override
@@ -69,11 +67,9 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
         }
     }
 
-    // ComfyUI has no model catalog - models are selected per workflow prompt, so
-    // there is nothing for model aliases to resolve against.
     @Override
     public List<Model> models() throws IOException, InterruptedException {
-        return List.of();
+        return List.of(); // ComfyUI has no model catalog
     }
 
     @Override
@@ -81,8 +77,7 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
         // ComfyUI's /free is a queue flag, not a synchronous call: the worker
         // consumes it on its next idle tick, so a running generation finishes
         // first. We wait for the queue to drain, raise the flag, then settle for
-        // a fixed period before we can be sure the models are actually unloaded
-        // (the Ollama heuristic, lengthened to 10s for the larger models).
+        // a fixed period before we can be sure the models are actually unloaded.
         if (!this.queueDrained()) {
             while (true) {
                 TimeUnit.MILLISECONDS.sleep(500);

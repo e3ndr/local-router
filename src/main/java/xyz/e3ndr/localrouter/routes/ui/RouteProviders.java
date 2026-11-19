@@ -121,17 +121,7 @@ public class RouteProviders implements EndpointProvider {
         return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
     }
 
-    /**
-     * Manual force-unload override: joins each affected pool - waits for its in-flight
-     * and queued requests to finish - then sleeps the pool's local providers under the
-     * pool's lock, so no request can be dispatched mid-unload and the coordinator is
-     * not raced. Optionally restricted to a single resource pool via the body's "pool"
-     * key ({"pool": "<id>"}; a blank or absent body means all pools). Cloud providers
-     * are skipped - they have nothing to unload. A stuck request keeps the join
-     * waiting; cancel it via the inflight endpoint to let the sleep through.
-     *
-     * Response: {"slept": ["<id>", ...], "failed": {"<id>": "<message>", ...}}
-     */
+    /** Manual force-unload: join each affected pool, then sleep its local providers under the pool's lock. */
     @HttpEndpoint(path = "/api/providers/sleep-all", allowedMethods = {
             HttpMethod.POST
     }, postprocessor = CorsPostprocessor.class)

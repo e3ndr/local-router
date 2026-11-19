@@ -26,6 +26,13 @@
 		'KOKORO_FASTAPI',
 		'PARAKEET'
 	];
+	// Kokoro + Parakeet serve a single model - there is nothing for
+	// "same-model only" to match.
+	const MATCHES_MODEL_TYPES: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI'
+	];
 	const REQUIRES_URL: InferenceProviderType[] = [
 		'OLLAMA',
 		'VLLM',
@@ -139,6 +146,7 @@
 						class="h-8 w-24 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
 					/>
 
+					{#if MATCHES_MODEL_TYPES.includes(type)}
 					<label class="flex items-center gap-1 text-xs text-sand-12">
 						<input
 							bind:checked={concurrencyMatchesModel}
@@ -147,6 +155,7 @@
 						/>
 						Same-model only
 					</label>
+					{/if}
 				</div>
 			{/if}
 

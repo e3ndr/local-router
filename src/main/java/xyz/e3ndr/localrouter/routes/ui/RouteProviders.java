@@ -1,6 +1,12 @@
 package xyz.e3ndr.localrouter.routes.ui;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import co.casterlabs.rakurai.json.Rson;
 import co.casterlabs.rakurai.json.element.JsonArray;
@@ -13,6 +19,7 @@ import co.casterlabs.rhs.protocol.api.endpoints.HttpEndpoint;
 import co.casterlabs.rhs.protocol.http.HttpResponse;
 import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
+import xyz.e3ndr.localrouter.Pools;
 import xyz.e3ndr.localrouter.db.Providers;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
 import xyz.e3ndr.localrouter.inference.InferenceProviderType;
@@ -115,11 +122,13 @@ public class RouteProviders implements EndpointProvider {
     }
 
     /**
-     * Manual force-unload override: sleeps every local (non-cloud) provider, optionally
-     * restricted to a single resource pool via the body's "pool" key ({"pool": "<id>"};
-     * a blank or absent body means all pools). In-flight requests on the affected
-     * providers fail; the pool coordinators self-heal, since the next switch re-wakes
-     * the incoming provider. Cloud providers are skipped - they have nothing to unload.
+     * Manual force-unload override: joins each affected pool - waits for its in-flight
+     * and queued requests to finish - then sleeps the pool's local providers under the
+     * pool's lock, so no request can be dispatched mid-unload and the coordinator is
+     * not raced. Optionally restricted to a single resource pool via the body's "pool"
+     * key ({"pool": "<id>"}; a blank or absent body means all pools). Cloud providers
+     * are skipped - they have nothing to unload. A stuck request keeps the join
+     * waiting; cancel it via the inflight endpoint to let the sleep through.
      *
      * Response: {"slept": ["<id>", ...], "failed": {"<id>": "<message>", ...}}
      */
@@ -138,9 +147,9 @@ public class RouteProviders implements EndpointProvider {
             // Blank or invalid body = all pools.
         }
 
-        JsonArray slept = new JsonArray();
-        JsonObject failed = new JsonObject();
-
+        // The local providers grouped by pool - a pool is joined and locked as a unit,
+        // since its providers share the coordinator.
+        Map<String, List<InferenceProvider>> targets = new LinkedHashMap<>();
         for (InferenceProvider provider : Providers.providers()) {
             if (provider.isCloud()) {
                 continue;
@@ -149,11 +158,44 @@ public class RouteProviders implements EndpointProvider {
                 continue;
             }
 
+            targets.computeIfAbsent(provider.resourcePool(), (k) -> new ArrayList<>()).add(provider);
+        }
+
+        JsonArray slept = new JsonArray();
+        JsonObject failed = new JsonObject();
+
+        for (Map.Entry<String, List<InferenceProvider>> target : targets.entrySet()) {
+            List<InferenceProvider> providers = target.getValue();
+
             try {
-                provider.sleep();
-                slept.add(provider.id());
-            } catch (Throwable t) {
-                failed.put(provider.id(), t.getMessage() != null ? t.getMessage() : t.toString());
+                this.joinPool(providers);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                for (InferenceProvider provider : providers) {
+                    failed.put(provider.id(), "Interrupted whilst waiting for the pool to drain");
+                }
+                continue;
+            }
+
+            try {
+                Pools.pool(target.getKey()).withLock(() -> {
+                    for (InferenceProvider provider : providers) {
+                        try {
+                            provider.sleep();
+                            slept.add(provider.id());
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        } catch (Throwable t) {
+                            failed.put(provider.id(), t.getMessage() != null ? t.getMessage() : t.toString());
+                        }
+                    }
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                for (InferenceProvider provider : providers) {
+                    failed.put(provider.id(), "Interrupted whilst waiting for the pool lock");
+                }
             }
         }
 
@@ -164,6 +206,34 @@ public class RouteProviders implements EndpointProvider {
                 .put("failed", failed)
                 .toString(true)
         ).mime("application/json; charset=utf-8");
+    }
+
+    /**
+     * Wait until no in-flight or queued requests remain on the given pool's
+     * providers (the pool has been joined), so sleeping them cannot interrupt a
+     * live request.
+     */
+    private void joinPool(List<InferenceProvider> providers) throws InterruptedException {
+        Set<String> ids = new HashSet<>();
+        for (InferenceProvider provider : providers) {
+            ids.add(provider.id());
+        }
+
+        while (true) {
+            boolean busy = false;
+            for (InFlight.InFlightRequest request : InFlight.inFlight()) {
+                if (ids.contains(request.providerId)) {
+                    busy = true;
+                    break;
+                }
+            }
+
+            if (!busy) {
+                return;
+            }
+
+            Thread.sleep(250);
+        }
     }
 
     @HttpEndpoint(path = "/api/providers/:id", allowedMethods = {

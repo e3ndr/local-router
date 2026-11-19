@@ -1,23 +1,13 @@
 package xyz.e3ndr.localrouter.inference.providers;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import javax.net.ssl.SSLSession;
 
 import co.casterlabs.rakurai.json.element.JsonArray;
 import co.casterlabs.rakurai.json.element.JsonObject;
@@ -158,76 +148,28 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
         // Automatic - ComfyUI loads models on the next prompt.
     }
 
-    // ComfyUI is driven by workflow prompts through the /proxy/<id> passthrough
-    // (POST /prompt, GET /history, ...), not the OpenAI-compatible endpoints.
+    // The router only dispatches v1 requests to a provider that lists the requested
+    // model, and ComfyUI lists none - these methods are unreachable, and throwing
+    // keeps that guarantee loud if it is ever broken.
     @Override
     public HttpResponse<InputStream> v1ChatCompletions(JsonObject body) {
-        return this.notImplemented("v1 chat completions");
+        throw new UnsupportedOperationException(
+            "ComfyUI providers do not support v1 chat completions; use the /proxy/<id> passthrough (POST /prompt, GET /history, ...) instead"
+        );
     }
 
     @Override
     public HttpResponse<InputStream> v1Completions(JsonObject body) {
-        return this.notImplemented("v1 completions");
+        throw new UnsupportedOperationException(
+            "ComfyUI providers do not support v1 completions; use the /proxy/<id> passthrough (POST /prompt, GET /history, ...) instead"
+        );
     }
 
     @Override
     public HttpResponse<InputStream> v1Embeddings(JsonObject body) {
-        return this.notImplemented("v1 embeddings");
-    }
-
-    private HttpResponse<InputStream> notImplemented(String operation) {
-        String message = "ComfyUI providers do not support " + operation
-            + "; use the /proxy/<id> passthrough (POST /prompt, GET /history, ...) instead";
-        byte[] bytes = new JsonObject()
-            .put("error", new JsonObject().put("message", message))
-            .toString()
-            .getBytes(StandardCharsets.UTF_8);
-        HttpHeaders headers = HttpHeaders.of(
-            Map.of("Content-Type", List.of("application/json; charset=utf-8")),
-            (name, values) -> true
+        throw new UnsupportedOperationException(
+            "ComfyUI providers do not support v1 embeddings; use the /proxy/<id> passthrough (POST /prompt, GET /history, ...) instead"
         );
-
-        return new HttpResponse<InputStream>() {
-            @Override
-            public int statusCode() {
-                return 501;
-            }
-
-            @Override
-            public HttpRequest request() {
-                return null;
-            }
-
-            @Override
-            public Optional<HttpResponse<InputStream>> previousResponse() {
-                return Optional.empty();
-            }
-
-            @Override
-            public HttpHeaders headers() {
-                return headers;
-            }
-
-            @Override
-            public InputStream body() {
-                return new ByteArrayInputStream(bytes);
-            }
-
-            @Override
-            public Optional<SSLSession> sslSession() {
-                return Optional.empty();
-            }
-
-            @Override
-            public URI uri() {
-                return null;
-            }
-
-            @Override
-            public HttpClient.Version version() {
-                return HttpClient.Version.HTTP_1_1;
-            }
-        };
     }
 
 }

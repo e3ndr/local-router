@@ -17,6 +17,15 @@
 		'PARAKEET',
 		'COMFYUI'
 	];
+	// ComfyUI is driven by workflow prompts through the passthrough, so its
+	// concurrency cannot be configured or ascertained.
+	const SUPPORTS_CONCURRENCY: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI',
+		'KOKORO_FASTAPI',
+		'PARAKEET'
+	];
 	const REQUIRES_URL: InferenceProviderType[] = [
 		'OLLAMA',
 		'VLLM',
@@ -119,7 +128,7 @@
 				{/if}
 			</div>
 
-			{#if REQUIRES_RESOURCE_POOL.includes(type)}
+			{#if SUPPORTS_CONCURRENCY.includes(type)}
 				<div class="flex items-center space-x-3">
 					<input
 						bind:value={concurrency}

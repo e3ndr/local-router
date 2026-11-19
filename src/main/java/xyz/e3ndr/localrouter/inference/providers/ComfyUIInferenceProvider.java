@@ -18,15 +18,11 @@ import xyz.e3ndr.localrouter.util.RsonBodyHandler;
 public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
     private final String baseUrl;
     private final String resourcePool;
-    private final int concurrency;
-    private final boolean concurrencyMatchesModel;
 
     public ComfyUIInferenceProvider(String id, JsonObject config) {
         super(id, config);
         this.baseUrl = config.getString("url");
         this.resourcePool = config.getString("resourcePool");
-        this.concurrency = config.containsKey("concurrency") ? config.getNumber("concurrency").intValue() : 1;
-        this.concurrencyMatchesModel = config.containsKey("concurrencyMatchesModel") && config.getBoolean("concurrencyMatchesModel");
     }
 
     @Override
@@ -47,16 +43,6 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
     }
 
     @Override
-    public int concurrency() {
-        return this.concurrency;
-    }
-
-    @Override
-    public boolean concurrencyMatchesModel() {
-        return this.concurrencyMatchesModel;
-    }
-
-    @Override
     public InferenceProviderType type() {
         return InferenceProviderType.COMFYUI;
     }
@@ -65,9 +51,7 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
     public JsonObject serializeConfig() {
         return super.serializeConfig()
             .put("url", this.baseUrl)
-            .put("resourcePool", this.resourcePool)
-            .put("concurrency", this.concurrency)
-            .put("concurrencyMatchesModel", this.concurrencyMatchesModel);
+            .put("resourcePool", this.resourcePool);
     }
 
     @Override
@@ -148,9 +132,7 @@ public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
         // Automatic - ComfyUI loads models on the next prompt.
     }
 
-    // The router only dispatches v1 requests to a provider that lists the requested
-    // model, and ComfyUI lists none - these methods are unreachable, and throwing
-    // keeps that guarantee loud if it is ever broken.
+    // Unreachable - we don't list any models.
     @Override
     public HttpResponse<InputStream> v1ChatCompletions(JsonObject body) {
         throw new UnsupportedOperationException(

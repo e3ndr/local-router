@@ -14,6 +14,7 @@ export declare type InferenceProviderType =
 	| 'VLLM_OMNI'
 	| 'KOKORO_FASTAPI'
 	| 'PARAKEET'
+	| 'COMFYUI'
 	| 'GENERIC'
 	| 'OPENAI'
 	| 'DEEPINFRA'
@@ -140,6 +141,23 @@ export async function updateProvider(
 }
 
 // ----------------------------------------------------------------
+
+export async function sleepAllProviders(pool?: string): Promise<{
+slept: string[];
+failed: Record<string, string>;
+}> {
+	const response = await fetch(`${ENDPOINT}/api/providers/sleep-all`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(pool ? { pool } : {})
+	});
+	if (!response.ok) {
+		throw await response.text();
+	}
+	return await response.json();
+}
 
 export declare interface ApiKey {
 	key: string | null;

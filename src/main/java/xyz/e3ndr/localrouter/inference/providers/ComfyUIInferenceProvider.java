@@ -1,0 +1,233 @@
+package xyz.e3ndr.localrouter.inference.providers;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+import javax.net.ssl.SSLSession;
+
+import co.casterlabs.rakurai.json.element.JsonArray;
+import co.casterlabs.rakurai.json.element.JsonObject;
+import xyz.e3ndr.localrouter.inference.InferenceProviderType;
+import xyz.e3ndr.localrouter.inference.Model;
+import xyz.e3ndr.localrouter.util.RsonBodyHandler;
+
+public class ComfyUIInferenceProvider extends _OAICompatibleInferenceProvider {
+    private final String baseUrl;
+    private final String resourcePool;
+    private final int concurrency;
+    private final boolean concurrencyMatchesModel;
+
+    public ComfyUIInferenceProvider(String id, JsonObject config) {
+        super(id, config);
+        this.baseUrl = config.getString("url");
+        this.resourcePool = config.getString("resourcePool");
+        this.concurrency = config.containsKey("concurrency") ? config.getNumber("concurrency").intValue() : 1;
+        this.concurrencyMatchesModel = config.containsKey("concurrencyMatchesModel") && config.getBoolean("concurrencyMatchesModel");
+    }
+
+    @Override
+    protected String baseUrl() {
+        return this.baseUrl;
+    }
+
+    // ComfyUI's API has no OpenAI-compatible prefix - only referenced by base
+    // methods this class overrides.
+    @Override
+    public String v1Prefix() {
+        return "";
+    }
+
+    @Override
+    public String resourcePool() {
+        return this.resourcePool;
+    }
+
+    @Override
+    public int concurrency() {
+        return this.concurrency;
+    }
+
+    @Override
+    public boolean concurrencyMatchesModel() {
+        return this.concurrencyMatchesModel;
+    }
+
+    @Override
+    public InferenceProviderType type() {
+        return InferenceProviderType.COMFYUI;
+    }
+
+    @Override
+    public JsonObject serializeConfig() {
+        return super.serializeConfig()
+            .put("url", this.baseUrl)
+            .put("resourcePool", this.resourcePool)
+            .put("concurrency", this.concurrency)
+            .put("concurrencyMatchesModel", this.concurrencyMatchesModel);
+    }
+
+    @Override
+    public boolean healthCheck() {
+        try {
+            int statusCode = this.sendRequest(
+                "/system_stats",
+                Function.identity(),
+                BodyHandlers.discarding()
+            ).statusCode();
+
+            return statusCode >= 200 && statusCode < 300;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    // ComfyUI has no model catalog - models are selected per workflow prompt, so
+    // there is nothing for model aliases to resolve against.
+    @Override
+    public List<Model> models() throws IOException, InterruptedException {
+        return List.of();
+    }
+
+    @Override
+    public void sleep() throws IOException, InterruptedException {
+        // ComfyUI's /free is a queue flag, not a synchronous call: the worker
+        // consumes it on its next idle tick, so a running generation finishes
+        // first. We wait for the queue to drain, raise the flag, then settle for
+        // a fixed period before we can be sure the models are actually unloaded
+        // (the Ollama heuristic, lengthened to 10s for the larger models).
+        if (!this.queueDrained()) {
+            while (true) {
+                TimeUnit.MILLISECONDS.sleep(500);
+                if (this.queueDrained()) {
+                    break;
+                }
+            }
+        }
+
+        this.sendRequest(
+            "/free",
+            (r) -> r
+                .POST(BodyPublishers.ofString(
+                    new JsonObject()
+                        .put("unload_models", true)
+                        .put("free_memory", true)
+                        .toString()
+                ))
+                .header("Content-Type", "application/json"),
+            BodyHandlers.discarding()
+        );
+
+        TimeUnit.SECONDS.sleep(10);
+    }
+
+    /**
+     * True when ComfyUI's prompt queue has no running or pending work.
+     */
+    private boolean queueDrained() {
+        try {
+            JsonObject queue = this.sendRequest(
+                "/queue",
+                Function.identity(),
+                RsonBodyHandler.of(JsonObject.class)
+            ).body();
+
+            JsonArray running = queue.getArray("queue_running");
+            JsonArray pending = queue.getArray("queue_pending");
+            return (running == null || running.isEmpty()) && (pending == null || pending.isEmpty());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @Override
+    public void wakeUp() throws IOException, InterruptedException {
+        // Automatic - ComfyUI loads models on the next prompt.
+    }
+
+    // ComfyUI is driven by workflow prompts through the /proxy/<id> passthrough
+    // (POST /prompt, GET /history, ...), not the OpenAI-compatible endpoints.
+    @Override
+    public HttpResponse<InputStream> v1ChatCompletions(JsonObject body) {
+        return this.notImplemented("v1 chat completions");
+    }
+
+    @Override
+    public HttpResponse<InputStream> v1Completions(JsonObject body) {
+        return this.notImplemented("v1 completions");
+    }
+
+    @Override
+    public HttpResponse<InputStream> v1Embeddings(JsonObject body) {
+        return this.notImplemented("v1 embeddings");
+    }
+
+    private HttpResponse<InputStream> notImplemented(String operation) {
+        String message = "ComfyUI providers do not support " + operation
+            + "; use the /proxy/<id> passthrough (POST /prompt, GET /history, ...) instead";
+        byte[] bytes = new JsonObject()
+            .put("error", new JsonObject().put("message", message))
+            .toString()
+            .getBytes(StandardCharsets.UTF_8);
+        HttpHeaders headers = HttpHeaders.of(
+            Map.of("Content-Type", List.of("application/json; charset=utf-8")),
+            (name, values) -> true
+        );
+
+        return new HttpResponse<InputStream>() {
+            @Override
+            public int statusCode() {
+                return 501;
+            }
+
+            @Override
+            public HttpRequest request() {
+                return null;
+            }
+
+            @Override
+            public Optional<HttpResponse<InputStream>> previousResponse() {
+                return Optional.empty();
+            }
+
+            @Override
+            public HttpHeaders headers() {
+                return headers;
+            }
+
+            @Override
+            public InputStream body() {
+                return new ByteArrayInputStream(bytes);
+            }
+
+            @Override
+            public Optional<SSLSession> sslSession() {
+                return Optional.empty();
+            }
+
+            @Override
+            public URI uri() {
+                return null;
+            }
+
+            @Override
+            public HttpClient.Version version() {
+                return HttpClient.Version.HTTP_1_1;
+            }
+        };
+    }
+
+}

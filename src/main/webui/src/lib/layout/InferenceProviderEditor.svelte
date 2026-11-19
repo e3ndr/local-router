@@ -17,7 +17,8 @@
 		'VLLM',
 		'VLLM_OMNI',
 		'KOKORO_FASTAPI',
-		'PARAKEET'
+		'PARAKEET',
+		'COMFYUI'
 	];
 	const REQUIRES_URL: InferenceProviderType[] = [
 		'OLLAMA',
@@ -25,7 +26,8 @@
 		'VLLM_OMNI',
 		'KOKORO_FASTAPI',
 		'PARAKEET',
-		'GENERIC'
+		'GENERIC',
+		'COMFYUI'
 	];
 
 	let type: InferenceProviderType = $state('OLLAMA');
@@ -62,6 +64,7 @@
 		['VLLM_OMNI', 'vLLM Omni'],
 		['KOKORO_FASTAPI', 'Kokoro FastAPI'],
 		['PARAKEET', 'Parakeet'],
+		['COMFYUI', 'ComfyUI'],
 		['GENERIC', 'Generic'],
 		['OPENAI', 'OpenAI'],
 		['DEEPINFRA', 'DeepInfra'],

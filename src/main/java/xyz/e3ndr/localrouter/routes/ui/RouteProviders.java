@@ -114,6 +114,58 @@ public class RouteProviders implements EndpointProvider {
         return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
     }
 
+    /**
+     * Manual force-unload override: sleeps every local (non-cloud) provider, optionally
+     * restricted to a single resource pool via the body's "pool" key ({"pool": "<id>"};
+     * a blank or absent body means all pools). In-flight requests on the affected
+     * providers fail; the pool coordinators self-heal, since the next switch re-wakes
+     * the incoming provider. Cloud providers are skipped - they have nothing to unload.
+     *
+     * Response: {"slept": ["<id>", ...], "failed": {"<id>": "<message>", ...}}
+     */
+    @HttpEndpoint(path = "/api/providers/sleep-all", allowedMethods = {
+            HttpMethod.POST
+    }, postprocessor = CorsPostprocessor.class)
+    public HttpResponse onSleepAll(HttpSession session, EndpointData<Void> data) {
+        String pool = null;
+        try {
+            JsonObject body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);
+            String requested = body.getString("pool");
+            if (requested != null && !requested.isBlank()) {
+                pool = requested;
+            }
+        } catch (IOException ignored) {
+            // Blank or invalid body = all pools.
+        }
+
+        JsonArray slept = new JsonArray();
+        JsonObject failed = new JsonObject();
+
+        for (InferenceProvider provider : Providers.providers()) {
+            if (provider.isCloud()) {
+                continue;
+            }
+            if (pool != null && !pool.equals(provider.resourcePool())) {
+                continue;
+            }
+
+            try {
+                provider.sleep();
+                slept.add(provider.id());
+            } catch (Throwable t) {
+                failed.put(provider.id(), t.getMessage() != null ? t.getMessage() : t.toString());
+            }
+        }
+
+        return HttpResponse.newFixedLengthResponse(
+            StandardHttpStatus.OK,
+            new JsonObject()
+                .put("slept", slept)
+                .put("failed", failed)
+                .toString(true)
+        ).mime("application/json; charset=utf-8");
+    }
+
     @HttpEndpoint(path = "/api/providers/:id", allowedMethods = {
             HttpMethod.PATCH
     }, postprocessor = CorsPostprocessor.class)

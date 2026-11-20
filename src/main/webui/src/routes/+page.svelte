@@ -76,6 +76,34 @@
 		const interval = setInterval(updateInFlight, 1000); // Update every 1 second
 		return () => clearInterval(interval);
 	});
+
+let sleeping = $state(false);
+let sleepResult = $state('');
+let sleepFailed = $state(false);
+let localPools: string[] = $derived([
+	...new Set(providers.filter((p) => p.resourcePool != 'cloud').map((p) => p.resourcePool))
+]);
+
+async function sleepPool(pool?: string) {
+	if (sleeping) {
+		return;
+	}
+	sleeping = true;
+	sleepResult = '';
+	sleepFailed = false;
+	try {
+		const result = await API.sleepAllProviders(pool);
+		const failed = Object.keys(result.failed);
+		sleepResult =
+			'Slept ' + result.slept.length + (failed.length > 0 ? ' - failed: ' + failed.join(', ') : '');
+		sleepFailed = failed.length > 0;
+	} catch (e) {
+		sleepResult = String(e);
+		sleepFailed = true;
+	} finally {
+		sleeping = false;
+	}
+}
 </script>
 
 <main class="mx-auto max-w-lg space-y-12 p-4">
@@ -115,6 +143,35 @@
 
 	<div>
 		<h2 class="mb-2 text-xl">Model Providers</h2>
+		{#if localPools.length > 0}
+		<div class="mb-2 flex flex-wrap gap-2">
+		{#each localPools as pool}
+		<button
+			onclick={() => sleepPool(pool)}
+			disabled={sleeping}
+			class:text-sand-11={sleeping}
+			class:text-sand-12={!sleeping}
+			class="rounded-lg bg-sand-3 p-2 text-xs focus:ring-2 focus:ring-amber-7 focus:outline-none"
+			class:hover:bg-sand-4={!sleeping}
+		>
+			<span>Sleep {pool}</span>
+		</button>
+		{/each}
+		<button
+			onclick={() => sleepPool()}
+			disabled={sleeping}
+			class:text-sand-11={sleeping}
+			class:text-sand-12={!sleeping}
+			class="rounded-lg bg-sand-3 p-2 text-xs focus:ring-2 focus:ring-amber-7 focus:outline-none"
+			class:hover:bg-sand-4={!sleeping}
+		>
+			<span>{sleeping ? 'Sleeping...' : 'Sleep All'}</span>
+		</button>
+		</div>
+		{/if}
+		{#if sleepResult.length > 0}
+			<p class="mb-2 text-xs" class:text-sand-11={!sleepFailed} class:text-[#e52a2a]={sleepFailed}>{sleepResult}</p>
+		{/if}
 		{#if providers.length > 0}
 			<ul class="flex flex-col gap-2">
 				{#each providers as provider}

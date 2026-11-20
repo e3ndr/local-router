@@ -1,6 +1,12 @@
 package xyz.e3ndr.localrouter.routes.ui;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import co.casterlabs.rakurai.json.Rson;
 import co.casterlabs.rakurai.json.element.JsonArray;
@@ -13,6 +19,7 @@ import co.casterlabs.rhs.protocol.api.endpoints.HttpEndpoint;
 import co.casterlabs.rhs.protocol.http.HttpResponse;
 import co.casterlabs.rhs.protocol.http.HttpSession;
 import xyz.e3ndr.localrouter.InFlight;
+import xyz.e3ndr.localrouter.Pools;
 import xyz.e3ndr.localrouter.db.Providers;
 import xyz.e3ndr.localrouter.inference.InferenceProvider;
 import xyz.e3ndr.localrouter.inference.InferenceProviderType;
@@ -112,6 +119,111 @@ public class RouteProviders implements EndpointProvider {
         Providers.create(InferenceProviderType.valueOf(body.getString("type")), body.getString("id"), body);
 
         return HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT, "");
+    }
+
+    /** Manual force-unload: join each affected pool, then sleep its local providers under the pool's lock. */
+    @HttpEndpoint(path = "/api/providers/sleep", allowedMethods = {
+            HttpMethod.POST
+    }, postprocessor = CorsPostprocessor.class)
+    public HttpResponse onSleep(HttpSession session, EndpointData<Void> data) {
+        String pool = null;
+        try {
+            JsonObject body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);
+            String requested = body.getString("pool");
+            if (requested != null && !requested.isBlank()) {
+                pool = requested;
+            }
+        } catch (IOException ignored) {
+            // Blank or invalid body = all pools.
+        }
+
+        // The local providers grouped by pool - a pool is joined and locked as a unit,
+        // since its providers share the coordinator.
+        Map<String, List<InferenceProvider>> targets = new LinkedHashMap<>();
+        for (InferenceProvider provider : Providers.providers()) {
+            if (provider.isCloud()) {
+                continue;
+            }
+            if (pool != null && !pool.equals(provider.resourcePool())) {
+                continue;
+            }
+
+            targets.computeIfAbsent(provider.resourcePool(), (k) -> new ArrayList<>()).add(provider);
+        }
+
+        JsonArray slept = new JsonArray();
+        JsonObject failed = new JsonObject();
+
+        for (Map.Entry<String, List<InferenceProvider>> target : targets.entrySet()) {
+            List<InferenceProvider> providers = target.getValue();
+
+            try {
+                this.joinPool(providers);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                for (InferenceProvider provider : providers) {
+                    failed.put(provider.id(), "Interrupted whilst waiting for the pool to drain");
+                }
+                continue;
+            }
+
+            try {
+                Pools.pool(target.getKey()).withLock(() -> {
+                    for (InferenceProvider provider : providers) {
+                        try {
+                            provider.sleep();
+                            slept.add(provider.id());
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        } catch (Throwable t) {
+                            failed.put(provider.id(), t.getMessage() != null ? t.getMessage() : t.toString());
+                        }
+                    }
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                for (InferenceProvider provider : providers) {
+                    failed.put(provider.id(), "Interrupted whilst waiting for the pool lock");
+                }
+            }
+        }
+
+        return HttpResponse.newFixedLengthResponse(
+            StandardHttpStatus.OK,
+            new JsonObject()
+                .put("slept", slept)
+                .put("failed", failed)
+                .toString(true)
+        ).mime("application/json; charset=utf-8");
+    }
+
+    /**
+     * Wait until no in-flight or queued requests remain on the given pool's
+     * providers (the pool has been joined), so sleeping them cannot interrupt a
+     * live request.
+     */
+    private void joinPool(List<InferenceProvider> providers) throws InterruptedException {
+        Set<String> ids = new HashSet<>();
+        for (InferenceProvider provider : providers) {
+            ids.add(provider.id());
+        }
+
+        while (true) {
+            boolean busy = false;
+            for (InFlight.InFlightRequest request : InFlight.inFlight()) {
+                if (ids.contains(request.providerId)) {
+                    busy = true;
+                    break;
+                }
+            }
+
+            if (!busy) {
+                return;
+            }
+
+            Thread.sleep(250);
+        }
     }
 
     @HttpEndpoint(path = "/api/providers/:id", allowedMethods = {

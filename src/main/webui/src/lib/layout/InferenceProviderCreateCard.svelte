@@ -14,7 +14,20 @@
 		'VLLM',
 		'VLLM_OMNI',
 		'KOKORO_FASTAPI',
+		'PARAKEET',
+		'COMFYUI'
+	];
+	const SUPPORTS_CONCURRENCY: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI',
+		'KOKORO_FASTAPI',
 		'PARAKEET'
+	];
+	const MATCHES_MODEL_TYPES: InferenceProviderType[] = [
+		'OLLAMA',
+		'VLLM',
+		'VLLM_OMNI'
 	];
 	const REQUIRES_URL: InferenceProviderType[] = [
 		'OLLAMA',
@@ -22,7 +35,8 @@
 		'VLLM_OMNI',
 		'KOKORO_FASTAPI',
 		'PARAKEET',
-		'GENERIC'
+		'GENERIC',
+		'COMFYUI'
 	];
 
 	let creating = $state(false);
@@ -73,6 +87,7 @@
 					<option value="VLLM_OMNI">vLLM Omni</option>
 					<option value="KOKORO_FASTAPI">Kokoro FastAPI</option>
 					<option value="PARAKEET">Parakeet</option>
+					<option value="COMFYUI">ComfyUI</option>
 					<option value="GENERIC">Generic</option>
 					<option value="OPENAI">OpenAI</option>
 					<option value="DEEPINFRA">DeepInfra</option>
@@ -116,7 +131,7 @@
 				{/if}
 			</div>
 
-			{#if REQUIRES_RESOURCE_POOL.includes(type)}
+			{#if SUPPORTS_CONCURRENCY.includes(type)}
 				<div class="flex items-center space-x-3">
 					<input
 						bind:value={concurrency}
@@ -127,6 +142,7 @@
 						class="h-8 w-24 rounded-lg border border-sand-4 bg-sand-2 px-2 py-1 text-xs text-sand-12 hover:bg-sand-3 focus:ring-2 focus:ring-amber-7 focus:outline-none"
 					/>
 
+					{#if MATCHES_MODEL_TYPES.includes(type)}
 					<label class="flex items-center gap-1 text-xs text-sand-12">
 						<input
 							bind:checked={concurrencyMatchesModel}
@@ -135,6 +151,7 @@
 						/>
 						Same-model only
 					</label>
+					{/if}
 				</div>
 			{/if}
 

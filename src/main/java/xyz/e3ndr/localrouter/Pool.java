@@ -151,6 +151,20 @@ public class Pool {
     }
 
     /**
+     * Run the given block while holding the pool's fair lock, so no request on this
+     * pool can be dispatched in between. The manual sleep path uses it to unload
+     * a pool's providers without racing the coordinator.
+     */
+    public void withLock(Runnable block) throws InterruptedException {
+        this.lock.lockInterruptibly();
+        try {
+            block.run();
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    /**
      * Drop a queued (not yet started) request from the line and let the dispatcher
      * re-evaluate the new head.
      */

@@ -8,6 +8,7 @@ import xyz.e3ndr.localrouter.inference.providers.BasetenInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.CerebrasInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.ChutesInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.CohereInferenceProvider;
+import xyz.e3ndr.localrouter.inference.providers.ComfyUIInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.DeepInfraInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.DeepSeekInferenceProvider;
 import xyz.e3ndr.localrouter.inference.providers.FireworksAIInferenceProvider;
@@ -40,6 +41,7 @@ public enum InferenceProviderType {
     VLLM_OMNI(vLLMOmniInferenceProvider::new),
     KOKORO_FASTAPI(KokoroFastAPIInferenceProvider::new),
     PARAKEET(ParakeetInferenceProvider::new),
+    COMFYUI(ComfyUIInferenceProvider::new),
     GENERIC(GenericInferenceProvider::new),
 
     OPENAI(OpenAIInferenceProvider::new),

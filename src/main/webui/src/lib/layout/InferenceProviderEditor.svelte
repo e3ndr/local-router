@@ -171,14 +171,14 @@
 				/>
 
 				{#if MATCHES_MODEL_TYPES.includes(type)}
-				<label class="flex items-center gap-1 text-xs text-sand-12">
-					<input
-						bind:checked={concurrencyMatchesModel}
-						type="checkbox"
-						class="rounded border-sand-4"
-					/>
-					Same-model only
-				</label>
+					<label class="flex items-center gap-1 text-xs text-sand-12">
+						<input
+							bind:checked={concurrencyMatchesModel}
+							type="checkbox"
+							class="rounded border-sand-4"
+						/>
+						Same-model only
+					</label>
 				{/if}
 			</div>
 		{/if}

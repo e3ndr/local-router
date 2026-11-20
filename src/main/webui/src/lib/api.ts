@@ -146,7 +146,7 @@ export async function sleepAllProviders(pool?: string): Promise<{
 slept: string[];
 failed: Record<string, string>;
 }> {
-	const response = await fetch(`${ENDPOINT}/api/providers/sleep-all`, {
+	const response = await fetch(`${ENDPOINT}/api/providers/sleep`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'

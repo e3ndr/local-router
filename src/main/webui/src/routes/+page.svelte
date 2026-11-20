@@ -170,7 +170,7 @@ async function sleepPool(pool?: string) {
 		</div>
 		{/if}
 		{#if sleepResult.length > 0}
-		<p class="mb-2 text-xs" class:text-sand-11={!sleepFailed} class:text-[#e52a2a]={sleepFailed}>{sleepResult}</p>
+			<p class="mb-2 text-xs" class:text-sand-11={!sleepFailed} class:text-[#e52a2a]={sleepFailed}>{sleepResult}</p>
 		{/if}
 		{#if providers.length > 0}
 			<ul class="flex flex-col gap-2">

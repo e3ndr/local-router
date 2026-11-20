@@ -122,10 +122,10 @@ public class RouteProviders implements EndpointProvider {
     }
 
     /** Manual force-unload: join each affected pool, then sleep its local providers under the pool's lock. */
-    @HttpEndpoint(path = "/api/providers/sleep-all", allowedMethods = {
+    @HttpEndpoint(path = "/api/providers/sleep", allowedMethods = {
             HttpMethod.POST
     }, postprocessor = CorsPostprocessor.class)
-    public HttpResponse onSleepAll(HttpSession session, EndpointData<Void> data) {
+    public HttpResponse onSleep(HttpSession session, EndpointData<Void> data) {
         String pool = null;
         try {
             JsonObject body = Rson.DEFAULT.fromJson(session.body().string(), JsonObject.class);

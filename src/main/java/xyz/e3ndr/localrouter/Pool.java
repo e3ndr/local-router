@@ -152,7 +152,7 @@ public class Pool {
 
     /**
      * Run the given block while holding the pool's fair lock, so no request on this
-     * pool can be dispatched in between. The manual sleep-all path uses it to unload
+     * pool can be dispatched in between. The manual sleep path uses it to unload
      * a pool's providers without racing the coordinator.
      */
     public void withLock(Runnable block) throws InterruptedException {
